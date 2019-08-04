@@ -4,7 +4,6 @@ package org.openpredict.exchange.rest.events;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import org.openpredict.exchange.rest.beans.MatchingRole;
 
 /**
  * Trade fill

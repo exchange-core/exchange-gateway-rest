@@ -2,14 +2,16 @@ package org.openpredict.exchange.rest;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
-import org.openpredict.exchange.rest.beans.GatewaySymbolSpecification;
+import org.openpredict.exchange.beans.cmd.OrderCommand;
+import org.openpredict.exchange.rest.model.GatewayAssetSpec;
+import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
 import org.rapidoid.http.Req;
 import org.rapidoid.http.Resp;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.IntConsumer;
 
 
@@ -19,60 +21,50 @@ import java.util.function.IntConsumer;
 public class GatewayState {
 
     private final AtomicInteger syncRequestsSequence = new AtomicInteger(0);
-    public final Map<Integer, Resp> syncRequests = new ConcurrentHashMap<>();
 
-    private final Map<String, GatewaySymbolSpecification> specsByNameIndex = new ConcurrentHashMap<>();
-    private final Map<Integer, String> nameByCodeIndex = new ConcurrentHashMap<>();
+    // promises cache (TODO can be changed to queue?)
 
-    public Optional<GatewaySymbolSpecification> getSymbolSpec(String symbolName) {
-        return Optional.ofNullable(specsByNameIndex.get(symbolName));
+    private final Map<String, GatewaySymbolSpec> symbolsByCode = new ConcurrentHashMap<>();
+    private final Map<Integer, GatewaySymbolSpec> symbolsById = new ConcurrentHashMap<>();
+
+    private final Map<String, GatewayAssetSpec> assetsByCode = new ConcurrentHashMap<>();
+
+
+    public GatewaySymbolSpec getSymbolSpec(String symbolCode) {
+        return symbolsByCode.get(symbolCode);
     }
 
-    public Optional<String> getSymbolByCode(int symbol) {
-        return Optional.ofNullable(nameByCodeIndex.get(symbol));
-    }
-
-    public boolean registerSymbolIfNotActive(GatewaySymbolSpecification spec) {
-        String s = nameByCodeIndex.putIfAbsent(spec.symbolId, spec.symbolName);
-        if (s == null || s.equals(spec.symbolName)) {
-            specsByNameIndex.compute(spec.symbolName, (k, v) -> (v != null && v.active) ? v : spec);
+    public boolean registerNewSymbol(GatewaySymbolSpec spec) {
+        if (symbolsById.putIfAbsent(spec.symbolId, spec) == null) {
+            symbolsByCode.put(spec.symbolCode, spec);
             return true;
-        } else {
-            // code associated with different symbol
-            return false;
         }
+        return false;
     }
 
-    public GatewaySymbolSpecification activateSymbol(int symbol) {
-        final String symbolName = nameByCodeIndex.get(symbol);
-        if (symbolName == null) {
-            return null;
-        }
+    public boolean registerNewAsset(GatewayAssetSpec spec) {
 
-        GatewaySymbolSpecification inactiveSpec = specsByNameIndex.get(symbolName);
-        if (inactiveSpec == null) {
-            return null;
-        }
+        // TODO implement validation and lifesycle
+        return assetsByCode.putIfAbsent(spec.assetCode, spec) == null;
+    }
 
-        GatewaySymbolSpecification activeSpec = GatewaySymbolSpecification.builder()
-                .symbolId(symbol)
-                .symbolName(symbolName)
-                .lotSize(inactiveSpec.lotSize)
-                .priceScale(inactiveSpec.priceScale)
-                .priceStep(inactiveSpec.priceStep)
-                .active(true)
-                .build();
-
-        specsByNameIndex.put(symbolName, activeSpec);
-        return activeSpec;
+    public GatewayAssetSpec getAssetSpec(String assetCode) {
+        return assetsByCode.get(assetCode);
     }
 
 
-    public Resp doAsyncCall(Req req, IntConsumer asyncMethod) {
-        final int ticket = syncRequestsSequence.incrementAndGet();
-        Resp resp = req.async().response();
-        asyncMethod.accept(ticket);
-        syncRequests.put(ticket, resp);
-        return resp;
+    public GatewaySymbolSpec activateSymbol(final int symbolId) {
+
+        final GatewaySymbolSpec newSpec = symbolsById.compute(symbolId, (k, v) ->
+                (v != null && v.status == GatewaySymbolSpec.GatewaySymbolLifecycle.NEW)
+                        ? v.withStatus(GatewaySymbolSpec.GatewaySymbolLifecycle.ACTIVE)
+                        : null);
+
+        if (newSpec != null) {
+            symbolsByCode.put(newSpec.symbolCode, newSpec);
+        }
+
+        return newSpec;
     }
+
 }

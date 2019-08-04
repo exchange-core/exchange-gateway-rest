@@ -5,30 +5,30 @@ import org.openpredict.exchange.beans.L2MarketData;
 import org.openpredict.exchange.beans.MatcherEventType;
 import org.openpredict.exchange.beans.cmd.CommandResultCode;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
-import org.openpredict.exchange.rest.beans.GatewaySymbolSpecification;
-import org.openpredict.exchange.rest.beans.MatchingRole;
 import org.openpredict.exchange.rest.events.*;
 import org.openpredict.exchange.rest.events.admin.SymbolUpdateAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserCreatedAdminEvent;
+import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
 import org.rapidoid.http.Resp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 
 @Service
 @Slf4j
-public class CommandEventsRouter implements Consumer<OrderCommand> {
+public class CommandEventsRouter implements BiConsumer<Long, OrderCommand> {
 
     @Autowired
     private GatewayState gatewayState;
 
-    @Autowired
-    private WebSocketServer webSocketServer;
+//    @Autowired
+//    private WebSocketServer webSocketServer;
 
     /**
      * TODO put non-latency-critical commands into a queue
@@ -36,36 +36,34 @@ public class CommandEventsRouter implements Consumer<OrderCommand> {
      * @param cmd command placeholder
      */
     @Override
-    public void accept(OrderCommand cmd) {
-        log.debug("EVENT CMD: " + cmd);
+    public void accept(Long seq, OrderCommand cmd) {
+        log.debug("seq={} EVENT CMD: {}", seq, cmd);
 
-        final CommandResultCode resultCode = cmd.resultCode;
-        final int ticket = cmd.userCookie;
-
-        Resp resp = gatewayState.syncRequests.remove(ticket);
-
-        if (resp == null) {
-            log.error("can not find resp #{}", ticket);
-            return;
-        }
-
-        Object data = (resultCode == CommandResultCode.SUCCESS)
-                ? processData(cmd)
-                : null;
-
-        RestGenericResponse response = RestGenericResponse.builder()
-                .ticket(ticket)
-                .response(resultCode)
-                .responseCode(resultCode.getCode())
-                .data(data)
-                .build();
-
-        resp.json(response).done();
-
-
-        cmd.processMatcherEvents(evt -> {
-            log.debug("INTERNAL EVENT: " + evt);
-        });
+//        final CommandResultCode resultCode = cmd.resultCode;
+//        final int ticket = cmd.userCookie;
+//
+//
+//        if (resp == null) {
+//            log.error("can not find resp #{}", ticket);
+//            return;
+//        }
+//
+//        Object data = (resultCode == CommandResultCode.SUCCESS)
+//                ? processData(cmd)
+//                : null;
+//
+//        RestGenericResponse response = RestGenericResponse.builder()
+//                .ticket(ticket)
+//                .coreResultCode(resultCode.getCode())
+//                .data(data)
+//                .build();
+//
+//        resp.json(response).done();
+//
+//
+//        cmd.processMatcherEvents(evt -> {
+//            log.debug("INTERNAL EVENT: " + evt);
+//        });
 
     }
 
@@ -85,9 +83,6 @@ public class CommandEventsRouter implements Consumer<OrderCommand> {
 
             case ADD_USER:
                 return handleAddUser(cmd);
-
-            case BINARY_DATA:
-                return addSymbol(cmd);
 
             default:
                 return null;
@@ -130,32 +125,10 @@ public class CommandEventsRouter implements Consumer<OrderCommand> {
                 .amount(cmd.price)
                 .balance(cmd.size)
                 .build();
-        webSocketServer.broadcast(apiEvent);
+        //webSocketServer.broadcast(apiEvent);
         return apiEvent;
     }
 
-    private SymbolUpdateAdminEvent addSymbol(OrderCommand cmd) {
-
-
-        GatewaySymbolSpecification spec = gatewayState.activateSymbol(cmd.symbol);
-        // TODO send ADD_SYMBOL_SUCCESS and SYMBOL_UPDATE events
-
-        SymbolUpdateAdminEvent apiEvent = SymbolUpdateAdminEvent.builder()
-                .symbolId(cmd.symbol)
-                .symbolName(spec.symbolName)
-                .priceStep(spec.priceStep)
-                .priceScale(spec.priceScale)
-                .lotSize(spec.lotSize)
-                .depositBuy(cmd.price)
-                .depositSell(cmd.uid)
-                .priceLowLimit(cmd.orderId)
-                .priceHighLimit(cmd.size)
-                .build();
-
-        webSocketServer.broadcast(apiEvent);
-
-        return apiEvent;
-    }
 
     private OrderBookEvent handleOrderBookCommand(OrderCommand cmd) {
 
@@ -188,14 +161,14 @@ public class CommandEventsRouter implements Consumer<OrderCommand> {
 
         //resp.json(orderBook).done();
 
-        webSocketServer.broadcast(orderBook);
+//        webSocketServer.broadcast(orderBook);
 
         return orderBook;
     }
 
     private UserCreatedAdminEvent handleAddUser(OrderCommand cmd) {
         UserCreatedAdminEvent apiEvent = UserCreatedAdminEvent.builder().uid(cmd.uid).build();
-        webSocketServer.broadcast(apiEvent);
+        //webSocketServer.broadcast(apiEvent);
         return apiEvent;
     }
 }

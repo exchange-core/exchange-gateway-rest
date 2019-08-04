@@ -1,4 +1,4 @@
-package org.openpredict.exchange.rest.beans;
+package org.openpredict.exchange.rest.events;
 
 public enum MatchingRole {
     MAKER,
