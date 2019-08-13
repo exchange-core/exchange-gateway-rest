@@ -1,23 +1,18 @@
 package org.openpredict.exchange.rest;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
-import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.rest.model.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
-import org.rapidoid.http.Req;
-import org.rapidoid.http.Resp;
-import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 
 // TODO separate interfaces for admin and user
-@Service
 @Slf4j
+@NoArgsConstructor
 public class GatewayState {
 
     private final AtomicInteger syncRequestsSequence = new AtomicInteger(0);

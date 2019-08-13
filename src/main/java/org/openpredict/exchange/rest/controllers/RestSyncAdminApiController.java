@@ -1,11 +1,11 @@
 package org.openpredict.exchange.rest.controllers;
 
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.CoreSymbolSpecification;
 import org.openpredict.exchange.beans.api.binary.BatchAddSymbolsCommand;
 import org.openpredict.exchange.beans.cmd.CommandResultCode;
 import org.openpredict.exchange.core.ExchangeApi;
-import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.GatewayState;
 import org.openpredict.exchange.rest.commands.ApiErrorCodes;
 import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustment;
@@ -17,38 +17,17 @@ import org.openpredict.exchange.rest.model.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
 import org.rapidoid.http.Req;
 import org.rapidoid.http.Resp;
-import org.rapidoid.setup.App;
 import org.rapidoid.setup.On;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import java.math.BigDecimal;
 
-@Service
 @Slf4j
+@AllArgsConstructor
 public class RestSyncAdminApiController {
 
-    @Autowired
-    private ExchangeCore exchangeCore;
+    private static final String SYNC_ADMIN_API_V1 = "/syncAdminApi/v1/";
 
-    @Autowired
-    private GatewayState gatewayState;
-
-    public static final String SYNC_ADMIN_API_V1 = "/syncAdminApi/v1/";
-
-    @PostConstruct
-    public void initRestApi() {
-
-        exchangeCore.startup();
-
-        final ExchangeApi api = exchangeCore.getApi();
-
-//        App.bootstrap(new String[0]);
-
-        App.bootstrap(new String[0], "profiles=mysql,prod", "on.address=0.0.0.0", "on.port=8080" ).jpa();
-
+    public static void init(ExchangeApi api, GatewayState gatewayState) {
 
         On.get(SYNC_ADMIN_API_V1 + "symbols/{symbolName}/orderBook").json((Req req, String symbolName) -> {
 
@@ -78,15 +57,13 @@ public class RestSyncAdminApiController {
             log.info("ADD USER >>> {}", cmd);
 
 
-            if (false) {
-                return errorResponse(req.response(), ApiErrorCodes.UNKNOWN_BASE_ASSET);
-            }
+//            if (false) {
+//                return errorResponse(req.response(), ApiErrorCodes.UNKNOWN_BASE_ASSET);
+//            }
 
             final Resp asyncResponse = req.async().response();
 
             api.createUser(cmd.getUid(), cmd2 -> {
-                log.info("RECV, sleep 3000");
-
 //                try {
 //                    Thread.sleep(1000);
 //                } catch (InterruptedException e) {
@@ -219,11 +196,6 @@ public class RestSyncAdminApiController {
         });
     }
 
-    @PreDestroy
-    public void shutdown() {
-
-        exchangeCore.shutdown();
-    }
 
     public static Resp errorResponse(Resp resp, ApiErrorCodes errMessage, String... args) {
         String msg = String.format(errMessage.errorDescription, (Object[]) args);
@@ -264,7 +236,9 @@ public class RestSyncAdminApiController {
 
     public static void asyncCoreResponse(Resp resp, Object data, CommandResultCode coreResult, int successCode) {
 
+        log.info("CODE");
         resp.code(coreResult == CommandResultCode.SUCCESS ? successCode : 400);
+        log.info("JSON");
         resp.json(RestGenericResponse.builder()
                 .ticket(0)
                 .gatewayResultCode(0)
@@ -272,8 +246,10 @@ public class RestSyncAdminApiController {
                 .data(data)
                 .description(coreResult.toString())
                 .build());
+        log.info("DONE");
         resp.done();
 
+        log.info("FINAL");
     }
 
 }

@@ -1,34 +1,31 @@
 package org.openpredict.exchange.rest;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.support.TestService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
 
-@RunWith(SpringRunner.class)
-@SpringBootTest
-// @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ComponentScan(basePackages = {
-        "org.openpredict.exchange.rest",
-})
-// @TestPropertySource(locations = "classpath:it.properties")
-//@ActiveProfiles("local")
-//@TestPropertySource(locations = "classpath:./it-local.properties")
 @Slf4j
 public class ITExchangeGatewayHttp {
 
-//    @MockBean
-//    private Consumer<OrderCommand> resultsConsumerMock;
-
-    @Autowired
     private TestService testService;
+
+    private RestGatewayApplication gateway;
+
+    @BeforeEach
+    public void before() {
+        gateway = new RestGatewayApplication();
+        gateway.start();
+        testService = new TestService();
+    }
+
+    @AfterEach
+    public void after(){
+        gateway.stop();
+    }
+
 
     @Test
     public void contextStarts() {
@@ -37,8 +34,6 @@ public class ITExchangeGatewayHttp {
 
     @Test
     public void shouldCreateUser() throws Exception {
-
-        Thread.sleep(1000000);
 
         testService.createAccount(123);
 

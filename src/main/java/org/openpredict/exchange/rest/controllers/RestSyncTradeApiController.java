@@ -2,7 +2,6 @@ package org.openpredict.exchange.rest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.core.ExchangeApi;
-import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.GatewayState;
 import org.openpredict.exchange.rest.commands.RestApiCancelOrder;
 import org.openpredict.exchange.rest.commands.RestApiMoveOrder;
@@ -12,29 +11,17 @@ import org.rapidoid.http.Req;
 import org.rapidoid.http.Resp;
 import org.rapidoid.setup.On;
 import org.rapidoid.u.U;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 
-@Service
 @Slf4j
 public class RestSyncTradeApiController {
-
-    @Autowired
-    private ExchangeCore exchangeCore;
-
-    @Autowired
-    private GatewayState gatewayState;
 
     // TODO per user
     //private ConcurrentHashMap<Long, Long> userCookies = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void initRestApi() {
 
-        final ExchangeApi api = exchangeCore.getApi();
+    public static void init(ExchangeApi api, GatewayState gatewayState) {
 
         On.post("/syncTradeApi/v1/orders").json((Req req, RestApiPlaceOrder placeOrder) -> {
             log.info("PLACE >>> {}", placeOrder);

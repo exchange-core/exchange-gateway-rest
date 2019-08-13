@@ -9,21 +9,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+
 
 //import kong.unirest.ObjectMapper;
 
 
-@Service
 @Slf4j
 public class TestService extends TestSupport {
 
-    public static final String LOCAL_SERVICE = "http://localhost:8080";
+    //public static final String LOCAL_SERVICE = "http://localhost:8080";
+    public static final String LOCAL_SERVICE = "http://192.168.0.51:8080";
     public static final String SYNC_ADMIN_API_V1 = LOCAL_SERVICE + "/syncAdminApi/v1/";
 
 //    @Autowired

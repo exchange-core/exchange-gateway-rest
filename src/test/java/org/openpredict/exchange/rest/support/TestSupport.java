@@ -1,15 +1,15 @@
 package org.openpredict.exchange.rest.support;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
-import org.springframework.http.MediaType;
-import org.springframework.http.converter.HttpMessageConverter;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
-import org.springframework.mock.http.MockHttpOutputMessage;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.context.WebApplicationContext;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
+//import org.springframework.http.MediaType;
+//import org.springframework.http.converter.HttpMessageConverter;
+//import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+//import org.springframework.mock.http.MockHttpOutputMessage;
+//import org.springframework.test.web.servlet.MockMvc;
+//import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+//import org.springframework.web.context.WebApplicationContext;
 
 import javax.annotation.PostConstruct;
 import java.io.IOException;

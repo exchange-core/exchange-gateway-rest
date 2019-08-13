@@ -1,39 +1,30 @@
 package org.openpredict.exchange.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.core.CoreWaitStrategy;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.core.journalling.DiskSerializationProcessor;
 import org.openpredict.exchange.core.orderbook.OrderBookFastImpl;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
+import org.openpredict.exchange.rest.controllers.RestSyncAdminApiController;
+import org.openpredict.exchange.rest.controllers.RestSyncTradeApiController;
+import org.rapidoid.setup.App;
 
 import static org.openpredict.exchange.core.Utils.ThreadAffityMode.THREAD_AFFINITY_ENABLE_PER_LOGICAL_CORE;
 
-@SpringBootApplication
-@EnableConfigurationProperties
-@ComponentScan(basePackages = {
-        "org.openpredict.exchange.rest"
-})
-//@PropertySource("application.properties")
-@Configuration
+@Slf4j
 public class RestGatewayApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(RestGatewayApplication.class, args);
-    }
+    private final ExchangeCore exchangeCore;
+    private final GatewayState gatewayState;
 
-    @Bean
-    public ExchangeCore exchangeCore(@Autowired CommandEventsRouter eventsRouter) {
+    public RestGatewayApplication() {
 
+        gatewayState = new GatewayState();
+        ;
+        CommandEventsRouter commandEventsRouter = new CommandEventsRouter(gatewayState);
 
-        return ExchangeCore.builder()
-                .resultsConsumer(eventsRouter)
+        exchangeCore = ExchangeCore.builder()
+                .resultsConsumer(commandEventsRouter)
                 .serializationProcessor(new DiskSerializationProcessor("./dumps"))
                 .ringBufferSize(4096)
                 .matchingEnginesNum(1)
@@ -48,12 +39,35 @@ public class RestGatewayApplication {
 
     }
 
+    public void start() {
 
-//    @Bean
-//    public Consumer<OrderCommand> resultsConsumer() {
-//        return cmd -> {
-//            System.out.println(">>>" + cmd);
-//        };
-//    }
+        log.info("Initializing Rapidoid...");
+
+        //        App.bootstrap(new String[0]);
+        App.bootstrap(new String[0], "profiles=dev", "on.address=0.0.0.0", "on.port=8080").jpa();
+//        App.profiles("foo", "bar");
+
+        RestSyncAdminApiController.init(exchangeCore.getApi(), gatewayState);
+        RestSyncTradeApiController.init(exchangeCore.getApi(), gatewayState);
+
+        log.info("Initializing exchange core...");
+
+        exchangeCore.startup();
+
+        log.info("Gateway ready");
+    }
+
+    public void stop() {
+        App.shutdown();
+        exchangeCore.shutdown();
+    }
+
+    public static void main(String[] args) {
+
+        RestGatewayApplication app = new RestGatewayApplication();
+
+        app.start();
+
+    }
 
 }
