@@ -5,7 +5,8 @@ import org.openpredict.exchange.core.CoreWaitStrategy;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.core.journalling.DiskSerializationProcessor;
 import org.openpredict.exchange.core.orderbook.OrderBookFastImpl;
-import org.openpredict.exchange.rest.controllers.RestSyncAdminApiController;
+import org.openpredict.exchange.rest.controllers.RestSyncAdminApiSymbolsController;
+import org.openpredict.exchange.rest.controllers.RestSyncAdminApiUsersController;
 import org.openpredict.exchange.rest.controllers.RestSyncTradeApiController;
 import org.rapidoid.setup.App;
 
@@ -47,8 +48,10 @@ public class RestGatewayApplication {
         App.bootstrap(new String[0], "profiles=dev", "on.address=0.0.0.0", "on.port=8080").jpa();
 //        App.profiles("foo", "bar");
 
-        RestSyncAdminApiController.init(exchangeCore.getApi(), gatewayState);
+        RestSyncAdminApiSymbolsController.init(exchangeCore.getApi(), gatewayState);
+        RestSyncAdminApiUsersController.init(exchangeCore.getApi(), gatewayState);
         RestSyncTradeApiController.init(exchangeCore.getApi(), gatewayState);
+
 
         log.info("Initializing exchange core...");
 
