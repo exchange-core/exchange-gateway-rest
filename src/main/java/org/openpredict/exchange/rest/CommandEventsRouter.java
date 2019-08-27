@@ -10,7 +10,6 @@ import org.openpredict.exchange.rest.events.admin.SymbolUpdateAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserCreatedAdminEvent;
 import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
-import org.rapidoid.http.Resp;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

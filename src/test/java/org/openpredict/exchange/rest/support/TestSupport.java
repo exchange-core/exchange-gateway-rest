@@ -18,16 +18,19 @@ import java.nio.charset.Charset;
 @Slf4j
 public class TestSupport {
 
-//    protected MockMvc mockMvc;
+    protected MockMvc mockMvc;
 
-//    protected MediaType applicationJson = new MediaType(
-//            MediaType.APPLICATION_JSON.getType(),
-//            MediaType.APPLICATION_JSON.getSubtype(),
-//            Charset.forName("utf8")
-//    );
+    protected MediaType applicationJson = new MediaType(
+            MediaType.APPLICATION_JSON.getType(),
+            MediaType.APPLICATION_JSON.getSubtype(),
+            Charset.forName("utf8")
+    );
 
-//    @PostConstruct
-//    public void setup() throws Exception {
+    @PostConstruct
+    public void setup() throws Exception {
+
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
 //        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).addFilters((servletRequest, servletResponse, filterChain) -> {
 //
 //            log.info("servletRequest={}", servletRequest);
@@ -35,27 +38,27 @@ public class TestSupport {
 //            log.info("filterChain={}", filterChain);
 //
 //        }).build();
-//    }
+    }
 
-//    protected HttpMessageConverter mappingJackson2HttpMessageConverter;
+    protected HttpMessageConverter mappingJackson2HttpMessageConverter;
 
-//    @Autowired
-//    protected WebApplicationContext webApplicationContext;
+    @Autowired
+    protected WebApplicationContext webApplicationContext;
 
-//    @Autowired
-//    public void setConverters(HttpMessageConverters converters) {
-//        mappingJackson2HttpMessageConverter = converters.getConverters().stream()
-//                .filter(converter -> converter instanceof MappingJackson2HttpMessageConverter)
-//                .findFirst()
-//                .orElseThrow((() -> new IllegalStateException("the JSON message converter can not be null")));
-//    }
+    @Autowired
+    public void setConverters(HttpMessageConverters converters) {
+        mappingJackson2HttpMessageConverter = converters.getConverters().stream()
+                .filter(converter -> converter instanceof MappingJackson2HttpMessageConverter)
+                .findFirst()
+                .orElseThrow((() -> new IllegalStateException("the JSON message converter can not be null")));
+    }
 
-//    protected String json(Object object) throws IOException {
-//        MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
-//        //noinspection unchecked
-//        mappingJackson2HttpMessageConverter.write(object, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
-//        return mockHttpOutputMessage.getBodyAsString();
-//    }
+    protected String json(Object object) throws IOException {
+        MockHttpOutputMessage mockHttpOutputMessage = new MockHttpOutputMessage();
+        //noinspection unchecked
+        mappingJackson2HttpMessageConverter.write(object, MediaType.APPLICATION_JSON, mockHttpOutputMessage);
+        return mockHttpOutputMessage.getBodyAsString();
+    }
 
 
 }

@@ -3,12 +3,14 @@ package org.openpredict.exchange.rest;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
+import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.model.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
-import org.rapidoid.http.Req;
-import org.rapidoid.http.Resp;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -29,6 +31,8 @@ public class GatewayState {
 
     private final Map<String, GatewayAssetSpec> assetsByCode = new ConcurrentHashMap<>();
 
+    @Autowired
+    private ExchangeCore exchangeCore;
 
     public GatewaySymbolSpec getSymbolSpec(String symbolCode) {
         return symbolsByCode.get(symbolCode);
@@ -65,6 +69,18 @@ public class GatewayState {
         }
 
         return newSpec;
+    }
+
+    @PostConstruct
+    public void start(){
+        log.debug("START1");
+        exchangeCore.startup();
+    }
+
+    @PreDestroy
+    public void stop(){
+        log.debug("STOP1");
+        exchangeCore.shutdown();
     }
 
 }

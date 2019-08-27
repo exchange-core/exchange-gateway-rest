@@ -29,8 +29,6 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <commons-lang3.version>3.7</commons-lang3.version>
 
-        <rapidoid.http.server.version>5.5.5</rapidoid.http.server.version>
-
         <eclipse.collections.version>9.2.0</eclipse.collections.version>
     </properties>
 
@@ -53,13 +51,6 @@
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-math3</artifactId>
                 <version>${commons-math3.version}</version>
-            </dependency>
-
-            <!-- Rapidoid -->
-            <dependency>
-                <groupId>org.rapidoid</groupId>
-                <artifactId>rapidoid-http-server</artifactId>
-                <version>${rapidoid.http.server.version}</version>
             </dependency>
 
             <!-- Eclipse (Goldman Sachs) collections -->
@@ -163,12 +154,6 @@
             <artifactId>eclipse-collections</artifactId>
         </dependency>
 
-        <!-- Rapidoid -->
-        <dependency>
-            <groupId>org.rapidoid</groupId>
-            <artifactId>rapidoid-http-server</artifactId>
-        </dependency>
-
         <!-- tests -->
 
         <dependency>
@@ -183,12 +168,14 @@
         </dependency>
 
 
+<!--
         <dependency>
             <groupId>com.konghq</groupId>
             <artifactId>unirest-java</artifactId>
             <version>2.3.14</version>
             <scope>test</scope>
         </dependency>
+-->
 
     </dependencies>
 

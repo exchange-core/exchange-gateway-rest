@@ -10,19 +10,19 @@ import java.math.BigDecimal;
 @Getter
 public final class RestApiAccountBalanceAdjustment {
 
-    public final long uid;
+    //public final long uid;
     public final long transactionId;
     public final BigDecimal amount;
     public final String currency;
 
     @JsonCreator
     public RestApiAccountBalanceAdjustment(
-            @JsonProperty("uid") long uid,
+            //@JsonProperty("uid") long uid,
             @JsonProperty("transactionId") long transactionId,
             @JsonProperty("amount") BigDecimal amount,
             @JsonProperty("currency") String currency) {
 
-        this.uid = uid;
+        //this.uid = uid;
         this.transactionId = transactionId;
         this.amount = amount;
         this.currency = currency;
@@ -30,6 +30,6 @@ public final class RestApiAccountBalanceAdjustment {
 
     @Override
     public String toString() {
-        return "[BALANCE_ADJ " + uid + " for " + amount + " " + currency + " transactionId:" + transactionId + "]";
+        return "[BALANCE_ADJ " + amount + " " + currency + " transactionId:" + transactionId + "]";
     }
 }

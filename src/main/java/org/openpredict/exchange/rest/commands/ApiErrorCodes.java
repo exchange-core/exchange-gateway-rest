@@ -13,6 +13,6 @@ public enum ApiErrorCodes {
     PRECISION_IS_TOO_HIGH(1005, 400, "precision is too high, reduce precision");
 
     public final int gatewayErrorCode;
-    public final int httpReturnCode;
+    public final int httpStatus;
     public final String errorDescription;
 }

@@ -7,20 +7,20 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public final class RestGenericResponse<T> {
+public final class RestGenericResponse {
 
     private final long ticket;
     private final int gatewayResultCode;
     private final int coreResultCode;
     private final String description;
-    private final T data;
+    private final Object data;
 
     public RestGenericResponse(
             @JsonProperty("ticket") long ticket,
             @JsonProperty("gatewayResultCode") int gatewayResultCode,
             @JsonProperty("coreResultCode") int coreResultCode,
             @JsonProperty("description") String description,
-            @JsonProperty("data") T data) {
+            @JsonProperty("data") Object data) {
 
         this.ticket = ticket;
         this.gatewayResultCode = gatewayResultCode;

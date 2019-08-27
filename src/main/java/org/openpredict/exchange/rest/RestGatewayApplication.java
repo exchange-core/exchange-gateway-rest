@@ -1,5 +1,6 @@
 package org.openpredict.exchange.rest;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.core.CoreWaitStrategy;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.core.journalling.DiskSerializationProcessor;
@@ -13,6 +14,9 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 import static org.openpredict.exchange.core.Utils.ThreadAffityMode.THREAD_AFFINITY_ENABLE_PER_LOGICAL_CORE;
 
 @SpringBootApplication
@@ -22,6 +26,7 @@ import static org.openpredict.exchange.core.Utils.ThreadAffityMode.THREAD_AFFINI
 })
 //@PropertySource("application.properties")
 @Configuration
+@Slf4j
 public class RestGatewayApplication {
 
     public static void main(String[] args) {
@@ -30,7 +35,6 @@ public class RestGatewayApplication {
 
     @Bean
     public ExchangeCore exchangeCore(@Autowired CommandEventsRouter eventsRouter) {
-
 
         return ExchangeCore.builder()
                 .resultsConsumer(eventsRouter)
@@ -47,7 +51,6 @@ public class RestGatewayApplication {
                 .build();
 
     }
-
 
 //    @Bean
 //    public Consumer<OrderCommand> resultsConsumer() {
