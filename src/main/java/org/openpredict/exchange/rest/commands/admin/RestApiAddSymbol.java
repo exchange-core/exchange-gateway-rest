@@ -3,6 +3,7 @@ package org.openpredict.exchange.rest.commands.admin;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import org.openpredict.exchange.beans.SymbolType;
 
 import java.math.BigDecimal;
@@ -29,6 +30,7 @@ public final class RestApiAddSymbol {
     public final BigDecimal priceLowLimit;
 
     @JsonCreator
+    @Builder
     public RestApiAddSymbol(
             @JsonProperty("symbolCode") String symbolCode,
             @JsonProperty("symbolId") int symbolId,

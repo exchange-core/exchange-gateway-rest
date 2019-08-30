@@ -3,6 +3,8 @@ package org.openpredict.exchange.rest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.openpredict.exchange.beans.OrderAction;
+import org.openpredict.exchange.beans.OrderType;
 import org.openpredict.exchange.beans.SymbolType;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
@@ -72,4 +74,33 @@ public class ITExchangeGatewayHttp {
         testService.adjustUserBalance(7332, "USDT", new BigDecimal("192.44"), 59282713223L);
     }
 
+    @Test
+    public void shouldPlaceMoveCancelLimitOrder() throws Exception {
+        testService.createUser(1001);
+        testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
+        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+
+        testService.adjustUserBalance(1001, "USDT", new BigDecimal("2692.44"), 713223L);
+
+        testService.addSymbol(new RestApiAddSymbol(
+                "XBTC_USDT",
+                3199,
+                SymbolType.CURRENCY_EXCHANGE_PAIR,
+                "XBTC",
+                "USDT",
+                new BigDecimal("0.1"),
+                new BigDecimal("0.01"),
+                new BigDecimal("0.08"),
+                new BigDecimal("0.03"),
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("50000"),
+                new BigDecimal("1000")));
+
+
+        testService.placeOrder(198298172212992L, "XBTC_USDT", 1001, BigDecimal.valueOf(829.33), 3, 4124, OrderAction.BID, OrderType.GTC);
+        testService.moveOrder(198298172212992L, "XBTC_USDT", 1001, BigDecimal.valueOf(829.29));
+
+
+    }
 }

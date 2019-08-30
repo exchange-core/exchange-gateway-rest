@@ -1,6 +1,10 @@
 package org.openpredict.exchange.rest.support;
 
 import lombok.extern.slf4j.Slf4j;
+import org.openpredict.exchange.beans.OrderAction;
+import org.openpredict.exchange.beans.OrderType;
+import org.openpredict.exchange.rest.commands.RestApiMoveOrder;
+import org.openpredict.exchange.rest.commands.RestApiPlaceOrder;
 import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustment;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
@@ -28,19 +32,20 @@ public class TestService extends TestSupport {
 
     //public static final String LOCAL_SERVICE = "http://localhost:8080";
     public static final String SYNC_ADMIN_API_V1 = "/syncAdminApi/v1/";
+    public static final String SYNC_TRADE_API_V1 = "/syncTradeApi/v1/";
 
 //    @Autowired
 //    private ApplicationContext applicationContext;
 
     public void addAsset(RestApiAsset newAsset) throws Exception {
 
-        String triggerUrl = SYNC_ADMIN_API_V1 + "/" + "assets";
+        String url = SYNC_ADMIN_API_V1 + "/" + "assets";
 
         String rawRequest = json(newAsset);
         log.debug("request: \n{}", rawRequest);
 
 
-        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(applicationJson))
                 .andExpect(jsonPath("$.data.assetCode", is(newAsset.assetCode)))
@@ -57,12 +62,12 @@ public class TestService extends TestSupport {
 
     public void addSymbol(RestApiAddSymbol newSymbol) throws Exception {
 
-        String triggerUrl = SYNC_ADMIN_API_V1 + "/" + "symbols";
+        String url = SYNC_ADMIN_API_V1 + "/" + "symbols";
 
         String rawRequest = json(newSymbol);
         log.debug("request: \n{}", rawRequest);
 
-        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(applicationJson))
 //                .andExpect(jsonPath("$.data.assetCode", is(newAsset.assetCode)))
@@ -90,7 +95,7 @@ public class TestService extends TestSupport {
 //
     public void createUser(long uid) throws Exception {
 
-        String triggerUrl = SYNC_ADMIN_API_V1 + "/" + "users";
+        String url = SYNC_ADMIN_API_V1 + "/" + "users";
 
         RestApiAddUser request = new RestApiAddUser(uid);
 
@@ -98,7 +103,7 @@ public class TestService extends TestSupport {
         log.debug("request: \n{}", rawRequest);
 
 
-        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(applicationJson))
                 .andExpect(jsonPath("$.data", is((int) uid)))
@@ -126,7 +131,7 @@ public class TestService extends TestSupport {
 
     public void adjustUserBalance(long uid, String currency, BigDecimal amount, long transactionId) throws Exception {
 
-        String triggerUrl = SYNC_ADMIN_API_V1 + "/users/" + uid + "/accounts";
+        String url = SYNC_ADMIN_API_V1 + "/users/" + uid + "/accounts";
 
         RestApiAccountBalanceAdjustment request = new RestApiAccountBalanceAdjustment(transactionId, amount, currency);
 
@@ -134,7 +139,7 @@ public class TestService extends TestSupport {
         log.debug("request: \n{}", rawRequest);
 
 
-        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(applicationJson))
                 //.andExpect(jsonPath("$.data", is((int) uid)))
@@ -146,5 +151,50 @@ public class TestService extends TestSupport {
 
         log.debug("contentAsString=" + contentAsString);
     }
+
+    public void placeOrder(long orderId, String symbol, long uid, BigDecimal price, long size, long userCookie, OrderAction action, OrderType type) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders", symbol, uid);
+
+        RestApiPlaceOrder request = new RestApiPlaceOrder(orderId, price, size, userCookie, action, type);
+
+        String rawRequest = json(request);
+        log.debug("request: \n{}", rawRequest);
+
+
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(applicationJson))
+                //.andExpect(jsonPath("$.data", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+    }
+
+    public void moveOrder(long orderId, String symbol, long uid, BigDecimal price) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders/%d", symbol, uid, orderId);
+
+        RestApiMoveOrder request = new RestApiMoveOrder(price);
+
+        String rawRequest = json(request);
+        log.debug("request: \n{}", rawRequest);
+
+
+        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(applicationJson))
+                //.andExpect(jsonPath("$.data", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+    }
+
 
 }

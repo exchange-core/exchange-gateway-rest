@@ -46,13 +46,15 @@ public class SyncTradeApiController {
 
         log.info("PLACE ORDER >>> {}", placeOrder);
 
-        GatewaySymbolSpec specification = gatewayState.getSymbolSpec(symbol);
-        if (specification == null) {
+        GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbol);
+        if (symbolSpec == null) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL);
         }
-        final long longPrice = placeOrder.getPrice().longValue();
 
-        final long longSize = placeOrder.getSize().longValue();
+        // TODO correct formula to convert prices
+        final long longPrice = placeOrder.getPrice()
+                .scaleByPowerOfTen(symbolSpec.quoteCurrency.scale)
+                .longValue();
 
         // TODO perform conversions
 
@@ -61,10 +63,11 @@ public class SyncTradeApiController {
         api.placeNewOrder(
                 0,
                 longPrice,
-                longSize,
+                longPrice, // same price (can not move bids up in exchange mode)
+                placeOrder.getSize(),
                 placeOrder.getAction(),
                 placeOrder.getOrderType(),
-                specification.symbolId,
+                symbolSpec.symbolId,
                 uid,
                 future::complete);
 
@@ -88,7 +91,7 @@ public class SyncTradeApiController {
 
 
     @RequestMapping(value = "symbols/{symbol}/trade/{uid}/orders/{orderId}", method = RequestMethod.PUT)
-    public ResponseEntity<RestGenericResponse> placeOrder(
+    public ResponseEntity<RestGenericResponse> moveOrder(
             @PathVariable long uid,
             @PathVariable String symbol,
             @PathVariable long orderId,
@@ -100,8 +103,9 @@ public class SyncTradeApiController {
         if (specification == null) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL);
         }
-        final BigDecimal price = moveOrder.getPrice();
-        final long longPrice = price.longValue();
+
+        // TODO correct formula to convert prices
+        final long longPrice = moveOrder.getPrice().longValue();
 
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();

@@ -112,7 +112,7 @@ public class SyncAdminApiAccountsController {
 
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
-        api.balanceAdjustment(uid, request.getTransactionId(), longAmount, future::complete);
+        api.balanceAdjustment(uid, request.getTransactionId(), currency.assetId, longAmount, future::complete);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< ADD BALANCE {}", orderCommand);
