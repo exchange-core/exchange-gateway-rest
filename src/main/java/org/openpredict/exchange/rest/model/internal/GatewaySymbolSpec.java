@@ -1,10 +1,11 @@
-package org.openpredict.exchange.rest.model;
+package org.openpredict.exchange.rest.model.internal;
 
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.experimental.Wither;
 import org.openpredict.exchange.beans.SymbolType;
+import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
 
 import java.math.BigDecimal;
 

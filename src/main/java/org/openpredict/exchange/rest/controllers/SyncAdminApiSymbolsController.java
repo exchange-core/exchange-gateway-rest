@@ -11,8 +11,8 @@ import org.openpredict.exchange.rest.commands.ApiErrorCodes;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
-import org.openpredict.exchange.rest.model.GatewayAssetSpec;
-import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
+import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
+import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -57,7 +57,6 @@ public class SyncAdminApiSymbolsController {
         } else {
             return RestControllerHelper.successResponse(request, HttpStatus.CREATED);
         }
-
     }
 
     @RequestMapping(value = "symbols", method = RequestMethod.POST)

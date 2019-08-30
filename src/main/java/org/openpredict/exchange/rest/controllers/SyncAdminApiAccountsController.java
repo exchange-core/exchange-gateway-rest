@@ -9,7 +9,7 @@ import org.openpredict.exchange.rest.commands.ApiErrorCodes;
 import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustment;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
-import org.openpredict.exchange.rest.model.GatewayAssetSpec;
+import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -87,7 +87,7 @@ public class SyncAdminApiAccountsController {
 
     }
 
-    @RequestMapping(value = "users/{uid}/balance", method = RequestMethod.POST)
+    @RequestMapping(value = "users/{uid}/accounts", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<RestGenericResponse> adjustBalance(
             @PathVariable long uid,

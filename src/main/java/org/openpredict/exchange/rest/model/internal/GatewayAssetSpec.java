@@ -1,4 +1,4 @@
-package org.openpredict.exchange.rest.model;
+package org.openpredict.exchange.rest.model.internal;
 
 
 import lombok.AllArgsConstructor;

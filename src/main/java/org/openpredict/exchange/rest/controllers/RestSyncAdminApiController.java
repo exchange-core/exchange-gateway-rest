@@ -1,29 +1,9 @@
 package org.openpredict.exchange.rest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.openpredict.exchange.beans.CoreSymbolSpecification;
-import org.openpredict.exchange.beans.api.binary.BatchAddSymbolsCommand;
-import org.openpredict.exchange.beans.cmd.CommandResultCode;
-import org.openpredict.exchange.core.ExchangeApi;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.GatewayState;
-import org.openpredict.exchange.rest.commands.ApiErrorCodes;
-import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustment;
-import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
-import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
-import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
-import org.openpredict.exchange.rest.events.RestGenericResponse;
-import org.openpredict.exchange.rest.model.GatewayAssetSpec;
-import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-import java.math.BigDecimal;
 
 @Slf4j
 public class RestSyncAdminApiController {

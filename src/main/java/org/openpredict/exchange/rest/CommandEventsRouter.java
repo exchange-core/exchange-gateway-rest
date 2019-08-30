@@ -3,20 +3,16 @@ package org.openpredict.exchange.rest;
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.L2MarketData;
 import org.openpredict.exchange.beans.MatcherEventType;
-import org.openpredict.exchange.beans.cmd.CommandResultCode;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.rest.events.*;
-import org.openpredict.exchange.rest.events.admin.SymbolUpdateAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserCreatedAdminEvent;
-import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 
 @Service

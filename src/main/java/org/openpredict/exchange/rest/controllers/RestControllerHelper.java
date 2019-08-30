@@ -33,9 +33,7 @@ public class RestControllerHelper {
                         .data(successMapper.get())
                         .description(resultCode.toString())
                         .build());
-
     }
-
 
     public static ResponseEntity<RestGenericResponse> successResponse(Object data, HttpStatus code) {
         return ResponseEntity

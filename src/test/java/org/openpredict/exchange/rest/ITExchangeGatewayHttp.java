@@ -31,12 +31,6 @@ public class ITExchangeGatewayHttp {
 
     @Test
     public void contextStarts() {
-
-    }
-
-    @Test
-    public void shouldCreateUser() throws Exception {
-        testService.createUser(123);
     }
 
     @Test
@@ -65,4 +59,17 @@ public class ITExchangeGatewayHttp {
                 new BigDecimal("50000"),
                 new BigDecimal("1000")));
     }
+
+    @Test
+    public void shouldCreateUser() throws Exception {
+        testService.createUser(123);
+    }
+
+    @Test
+    public void shouldAdjustUserBalance() throws Exception {
+        testService.createUser(7332);
+        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+        testService.adjustUserBalance(7332, "USDT", new BigDecimal("192.44"), 59282713223L);
+    }
+
 }

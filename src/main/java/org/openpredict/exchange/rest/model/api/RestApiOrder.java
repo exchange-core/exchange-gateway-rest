@@ -1,42 +1,57 @@
-package org.openpredict.exchange.rest.commands;
+package org.openpredict.exchange.rest.model.api;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 import lombok.Getter;
 import org.openpredict.exchange.beans.OrderAction;
 import org.openpredict.exchange.beans.OrderType;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
-public final class RestApiPlaceOrder {
+public final class RestApiOrder {
 
     private final BigDecimal price;
     private final BigDecimal size;
+    private final BigDecimal filled;
+
+    private final OrderState state;
 
     private final long userCookie;
+
     private final OrderAction action;
     private final OrderType orderType;
 
+    private final String symbol;
+
+    private final List<RestApiDeal> deals;
+
+    // TODO add more fields
+
     @JsonCreator
-    public RestApiPlaceOrder(
+    @Builder
+    public RestApiOrder(
             @JsonProperty("price") BigDecimal price,
             @JsonProperty("size") BigDecimal size,
+            @JsonProperty("filled") BigDecimal filled,
             @JsonProperty("userCookie") long userCookie,
+            @JsonProperty("state") OrderState state,
             @JsonProperty("action") OrderAction action,
-            @JsonProperty("orderType") OrderType orderType) {
+            @JsonProperty("orderType") OrderType orderType,
+            @JsonProperty("symbol") String symbol,
+            @JsonProperty("deals") List<RestApiDeal> deals) {
 
         this.price = price;
         this.size = size;
+        this.filled = filled;
         this.userCookie = userCookie;
+        this.state = state;
         this.action = action;
         this.orderType = orderType;
-    }
-
-    @Override
-    public String toString() {
-        return "[ADD " + (action == OrderAction.ASK ? 'A' : 'B') + orderType
-                + price + ":" + size + "]";
+        this.symbol = symbol;
+        this.deals = deals;
     }
 }
