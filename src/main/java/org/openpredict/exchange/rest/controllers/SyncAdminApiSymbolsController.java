@@ -8,8 +8,8 @@ import org.openpredict.exchange.core.ExchangeApi;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.GatewayState;
 import org.openpredict.exchange.rest.commands.ApiErrorCodes;
-import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustment;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
+import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
 import org.openpredict.exchange.rest.model.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.GatewaySymbolSpec;
@@ -17,10 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
-import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -36,8 +38,30 @@ public class SyncAdminApiSymbolsController {
     private GatewayState gatewayState;
 
 
+    @RequestMapping(value = "assets", method = RequestMethod.POST)
+    public ResponseEntity<RestGenericResponse> createAsset(@Valid @RequestBody RestApiAsset request) throws ExecutionException, InterruptedException {
+
+        log.info(">>> ADD ASSET {}", request);
+
+        // TODO Publish through bus
+        final GatewayAssetSpec spec = GatewayAssetSpec.builder()
+                .assetCode(request.assetCode)
+                .assetId(request.assetId)
+                .scale(request.scale)
+                .active(false)
+                .build();
+
+        if (!gatewayState.registerNewAsset(spec)) {
+            log.warn("Can not add asset, already exists");
+            return RestControllerHelper.errorResponse(ApiErrorCodes.ASSET_ALREADY_EXISTS);
+        } else {
+            return RestControllerHelper.successResponse(request, HttpStatus.CREATED);
+        }
+
+    }
+
     @RequestMapping(value = "symbols", method = RequestMethod.POST)
-    public ResponseEntity<RestGenericResponse> createSymbols(@Valid @RequestBody RestApiAddSymbol request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<RestGenericResponse> createSymbol(@Valid @RequestBody RestApiAddSymbol request) throws ExecutionException, InterruptedException {
 
         log.info("ADD SYMBOL >>> {}", request);
 
@@ -45,11 +69,13 @@ public class SyncAdminApiSymbolsController {
 
         final GatewayAssetSpec baseAsset = gatewayState.getAssetSpec(request.baseAsset);
         if (baseAsset == null) {
+            log.warn("UNKNOWN_BASE_ASSET : " + request.baseAsset);
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_BASE_ASSET);
         }
 
         final GatewayAssetSpec quoteCurrency = gatewayState.getAssetSpec(request.quoteCurrency);
         if (quoteCurrency == null) {
+            log.warn("UNKNOWN_QUOTE_CURRENCY : " + request.quoteCurrency);
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_QUOTE_CURRENCY);
         }
 
@@ -74,6 +100,7 @@ public class SyncAdminApiSymbolsController {
                 .build();
 
         if (!gatewayState.registerNewSymbol(spec)) {
+            log.warn("SYMBOL_ALREADY_EXISTS : id={} code={}", symbolId, request.symbolCode);
             return RestControllerHelper.errorResponse(ApiErrorCodes.SYMBOL_ALREADY_EXISTS);
         }
 
@@ -106,40 +133,8 @@ public class SyncAdminApiSymbolsController {
 
         GatewaySymbolSpec newSpec = gatewayState.activateSymbol(symbolId);
 
-        return RestControllerHelper.coreResponse(orderCommand, () -> null, HttpStatus.CREATED);
+        return RestControllerHelper.coreResponse(orderCommand, () -> newSpec, HttpStatus.CREATED);
 
-    }
-
-    @RequestMapping(value = "users/{uid}/balance", method = RequestMethod.POST)
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<RestGenericResponse> adjustBalance(
-            @PathVariable long uid,
-            @Valid @RequestBody RestApiAccountBalanceAdjustment request) throws ExecutionException, InterruptedException {
-
-        log.info("ADD BALANCE >>> {} {}", uid, request);
-
-        // TODO currency conversion
-
-        final GatewayAssetSpec currency = gatewayState.getAssetSpec(request.currency);
-        if (currency == null) {
-            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_CURRENCY);
-        }
-
-
-        final BigDecimal amount = request.getAmount().scaleByPowerOfTen(currency.scale).stripTrailingZeros();
-        if (amount.scale() > 0) {
-            return RestControllerHelper.errorResponse(ApiErrorCodes.PRECISION_IS_TOO_HIGH);
-        }
-
-        final long longAmount = amount.longValue();
-
-        ExchangeApi api = exchangeCore.getApi();
-        CompletableFuture<OrderCommand> future = new CompletableFuture<>();
-        api.balanceAdjustment(uid, request.getTransactionId(), longAmount, future::complete);
-
-        OrderCommand orderCommand = future.get();
-        log.info("<<< ADD BALANCE {}", orderCommand);
-        return RestControllerHelper.coreResponse(orderCommand, () -> null, HttpStatus.CREATED);
     }
 
 

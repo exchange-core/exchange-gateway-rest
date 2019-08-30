@@ -29,10 +29,25 @@ public class RestControllerHelper {
                 .body(RestGenericResponse.builder()
                         .ticket(0)
                         .gatewayResultCode(0)
-                        .coreResultCode(0)
+                        .coreResultCode(resultCode.getCode())
                         .data(successMapper.get())
                         .description(resultCode.toString())
                         .build());
 
     }
+
+
+    public static ResponseEntity<RestGenericResponse> successResponse(Object data, HttpStatus code) {
+        return ResponseEntity
+                .status(code)
+                .body(RestGenericResponse.builder()
+                        .ticket(0)
+                        .gatewayResultCode(0)
+                        .coreResultCode(0)
+                        .data(data)
+                        //.description(null)
+                        .build());
+
+    }
+
 }

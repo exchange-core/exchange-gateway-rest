@@ -1,19 +1,17 @@
 package org.openpredict.exchange.rest.support;
 
 import lombok.extern.slf4j.Slf4j;
+import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
+import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-
-import com.jayway.jsonpath.JsonPath;
-import static org.hamcrest.CoreMatchers.is;
-
-//import kong.unirest.ObjectMapper;
 
 
 @Service
@@ -55,30 +53,52 @@ public class TestService extends TestSupport {
 //        });
 //    }
 //
-//    public void addAsset(RestApiAsset addAsset) throws Exception {
-//
-//        HttpResponse<String> response = Unirest.post(SYNC_ADMIN_API_V1 + "assets")
-//                .header("accept", "application/json")
-//                .header("Content-Type", "application/json")
-//                .body(addAsset)
-//                .asString();
-//
-//        assertThat(response.getStatus(), is(201));
-//
-//        RestGenericResponse<RestApiAsset> respJson = objectMapper.readValue(response.getBody(), new TypeReference<RestGenericResponse<RestApiAsset>>() {
-//        });
-//
-//        assertThat(respJson.getGatewayResultCode(), is(0));
-//        assertThat(respJson.getCoreResultCode(), is(0));
-//
-//        RestApiAsset asset = respJson.getData();
-//        assertThat(asset.assetCode, is(addAsset.assetCode));
-//        assertThat(asset.assetId, is(addAsset.assetId));
-//        assertThat(asset.scale, is(addAsset.scale));
-//
-//    }
-//
-//    public void getOrderBook(String symbol) throws Exception {
+    public void addAsset(RestApiAsset newAsset) throws Exception {
+
+        String triggerUrl = SYNC_ADMIN_API_V1 + "/" + "assets";
+
+        String rawRequest = json(newAsset);
+        log.debug("request: \n{}", rawRequest);
+
+
+        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(applicationJson))
+                .andExpect(jsonPath("$.data.assetCode", is(newAsset.assetCode)))
+                .andExpect(jsonPath("$.data.assetId", is(newAsset.assetId)))
+                .andExpect(jsonPath("$.data.scale", is(newAsset.scale)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(0)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+
+        log.debug("contentAsString=" + contentAsString);
+    }
+
+    public void addSymbol(RestApiAddSymbol newSymbol) throws Exception {
+
+        String triggerUrl = SYNC_ADMIN_API_V1 + "/" + "symbols";
+
+        String rawRequest = json(newSymbol);
+        log.debug("request: \n{}", rawRequest);
+
+        MvcResult result = mockMvc.perform(post(triggerUrl).content(rawRequest).contentType(applicationJson))
+                .andExpect(status().isCreated())
+                .andExpect(content().contentType(applicationJson))
+//                .andExpect(jsonPath("$.data.assetCode", is(newAsset.assetCode)))
+//                .andExpect(jsonPath("$.data.assetId", is(newAsset.assetId)))
+//                .andExpect(jsonPath("$.data.scale", is(newAsset.scale)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+
+        log.debug("contentAsString=" + contentAsString);
+    }
+
+    //    public void getOrderBook(String symbol) throws Exception {
 //
 //        HttpResponse<String> accept = Unirest.get(SYNC_ADMIN_API_V1 + "symbols/" + symbol + "/orderBook")
 //                .header("accept", "application/json")
@@ -109,8 +129,7 @@ public class TestService extends TestSupport {
 
         String contentAsString = result.getResponse().getContentAsString();
 
-        log.debug("contentAsString="+contentAsString);
-
+        log.debug("contentAsString=" + contentAsString);
 
 
         // ZonedDateTime startTime = ZonedDateTime.parse(JsonPath.read(contentAsString, "$.task.updatedTime"));
