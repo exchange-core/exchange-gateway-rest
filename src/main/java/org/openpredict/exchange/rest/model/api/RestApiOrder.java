@@ -14,6 +14,8 @@ import java.util.List;
 @Getter
 public final class RestApiOrder {
 
+    private final long orderId;
+
     private final BigDecimal price;
     private final BigDecimal size;
     private final BigDecimal filled;
@@ -34,6 +36,7 @@ public final class RestApiOrder {
     @JsonCreator
     @Builder
     public RestApiOrder(
+            @JsonProperty("orderId") long orderId,
             @JsonProperty("price") BigDecimal price,
             @JsonProperty("size") BigDecimal size,
             @JsonProperty("filled") BigDecimal filled,
@@ -44,6 +47,7 @@ public final class RestApiOrder {
             @JsonProperty("symbol") String symbol,
             @JsonProperty("deals") List<RestApiDeal> deals) {
 
+        this.orderId = orderId;
         this.price = price;
         this.size = size;
         this.filled = filled;

@@ -12,8 +12,6 @@ import java.math.BigDecimal;
 @Getter
 public final class RestApiPlaceOrder {
 
-    private final long orderId;
-
     private final BigDecimal price;
     private final long size; // only integer sizes allowed
 
@@ -23,14 +21,12 @@ public final class RestApiPlaceOrder {
 
     @JsonCreator
     public RestApiPlaceOrder(
-            @JsonProperty("orderId") long orderId,
             @JsonProperty("price") BigDecimal price,
             @JsonProperty("size") long size,
             @JsonProperty("userCookie") long userCookie,
             @JsonProperty("action") OrderAction action,
             @JsonProperty("orderType") OrderType orderType) {
 
-        this.orderId = orderId;
         this.price = price;
         this.size = size;
         this.userCookie = userCookie;

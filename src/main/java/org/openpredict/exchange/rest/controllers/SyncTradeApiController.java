@@ -60,7 +60,7 @@ public class SyncTradeApiController {
 
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
-        api.placeNewOrder(
+        long orderId = api.placeNewOrder(
                 0,
                 longPrice,
                 longPrice, // same price (can not move bids up in exchange mode)
@@ -70,12 +70,14 @@ public class SyncTradeApiController {
                 symbolSpec.symbolId,
                 uid,
                 future::complete);
+        log.info("placeing orderId {}", orderId);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< PLACE ORDER {}", orderCommand);
 
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
+                .orderId(orderCommand.orderId)
                 .size(BigDecimal.valueOf(orderCommand.size))
                 .filled(BigDecimal.valueOf(-1))
                 .state(OrderState.NEW)
@@ -97,7 +99,7 @@ public class SyncTradeApiController {
             @PathVariable long orderId,
             @Valid @RequestBody RestApiMoveOrder moveOrder) throws ExecutionException, InterruptedException {
 
-        log.info("MOVE ORDER >>> {}", moveOrder);
+        log.info("MOVE ORDER >>> {} uid={} {}", orderId, uid, moveOrder);
 
         GatewaySymbolSpec specification = gatewayState.getSymbolSpec(symbol);
         if (specification == null) {
@@ -117,10 +119,11 @@ public class SyncTradeApiController {
                 future::complete);
 
         OrderCommand orderCommand = future.get();
-        log.info("<<< PLACE ORDER {}", orderCommand);
+        log.info("<<< MOVE ORDER {}", orderCommand);
 
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
+                .orderId(orderCommand.orderId)
                 .size(BigDecimal.valueOf(orderCommand.size))
                 .filled(BigDecimal.valueOf(-1))
                 .state(OrderState.ACTIVE)
@@ -160,6 +163,7 @@ public class SyncTradeApiController {
 
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
+                .orderId(orderCommand.orderId)
                 .size(BigDecimal.valueOf(orderCommand.size))
                 .filled(BigDecimal.valueOf(-1))
                 .state(OrderState.CANCELLED)

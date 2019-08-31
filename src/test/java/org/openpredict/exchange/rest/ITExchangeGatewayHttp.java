@@ -98,9 +98,8 @@ public class ITExchangeGatewayHttp {
                 new BigDecimal("1000")));
 
 
-        testService.placeOrder(198298172212992L, "XBTC_USDT", 1001, BigDecimal.valueOf(829.33), 3, 4124, OrderAction.BID, OrderType.GTC);
-        testService.moveOrder(198298172212992L, "XBTC_USDT", 1001, BigDecimal.valueOf(829.29));
-
-
+        long orderId = testService.placeOrder("XBTC_USDT", 1001, BigDecimal.valueOf(829.33), 3, 4124, OrderAction.BID, OrderType.GTC);
+        testService.moveOrder(orderId, "XBTC_USDT", 1001, BigDecimal.valueOf(829.29));
+        testService.cancelOrder(orderId, "XBTC_USDT", 1001);
     }
 }

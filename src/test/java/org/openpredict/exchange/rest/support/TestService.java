@@ -1,5 +1,6 @@
 package org.openpredict.exchange.rest.support;
 
+import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.OrderAction;
 import org.openpredict.exchange.beans.OrderType;
@@ -17,7 +18,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import java.math.BigDecimal;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 
@@ -152,11 +153,11 @@ public class TestService extends TestSupport {
         log.debug("contentAsString=" + contentAsString);
     }
 
-    public void placeOrder(long orderId, String symbol, long uid, BigDecimal price, long size, long userCookie, OrderAction action, OrderType type) throws Exception {
+    public long placeOrder(String symbol, long uid, BigDecimal price, long size, long userCookie, OrderAction action, OrderType type) throws Exception {
 
         String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders", symbol, uid);
 
-        RestApiPlaceOrder request = new RestApiPlaceOrder(orderId, price, size, userCookie, action, type);
+        RestApiPlaceOrder request = new RestApiPlaceOrder(price, size, userCookie, action, type);
 
         String rawRequest = json(request);
         log.debug("request: \n{}", rawRequest);
@@ -172,6 +173,10 @@ public class TestService extends TestSupport {
 
         String contentAsString = result.getResponse().getContentAsString();
         log.debug("contentAsString=" + contentAsString);
+
+        long orderId = JsonPath.parse(contentAsString).read("$.data.orderId", Long.class);
+        log.debug("orderId=" + contentAsString);
+        return orderId;
     }
 
     public void moveOrder(long orderId, String symbol, long uid, BigDecimal price) throws Exception {
@@ -184,8 +189,8 @@ public class TestService extends TestSupport {
         log.debug("request: \n{}", rawRequest);
 
 
-        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
-                .andExpect(status().isCreated())
+        MvcResult result = mockMvc.perform(put(url).content(rawRequest).contentType(applicationJson))
+                .andExpect(status().isOk())
                 .andExpect(content().contentType(applicationJson))
                 //.andExpect(jsonPath("$.data", is((int) uid)))
                 .andExpect(jsonPath("$.gatewayResultCode", is(0)))
@@ -196,5 +201,21 @@ public class TestService extends TestSupport {
         log.debug("contentAsString=" + contentAsString);
     }
 
+
+    public void cancelOrder(long orderId, String symbol, long uid) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders/%d", symbol, uid, orderId);
+
+        MvcResult result = mockMvc.perform(delete(url).contentType(applicationJson))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+                //.andExpect(jsonPath("$.data", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+    }
 
 }
