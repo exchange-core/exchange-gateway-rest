@@ -10,6 +10,7 @@ import org.openpredict.exchange.rest.GatewayState;
 import org.openpredict.exchange.rest.commands.ApiErrorCodes;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
+import org.openpredict.exchange.rest.commands.util.ArithmeticHelper;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
 import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -81,6 +83,22 @@ public class SyncAdminApiSymbolsController {
         // TODO validations
         final int symbolId = request.symbolId;
 
+        // lot size in base asset units
+        final BigDecimal lotSizeInBaseAssetUnits = request.lotSize.scaleByPowerOfTen(baseAsset.scale);
+        if (!ArithmeticHelper.isIntegerValue(lotSizeInBaseAssetUnits)) {
+            return RestControllerHelper.errorResponse(
+                    ApiErrorCodes.INVALID_CONFIGURATION,
+                    "lot size must be integer when converted to base asset units: " + lotSizeInBaseAssetUnits);
+        }
+
+        // step size in quote currency units
+        final BigDecimal stepSizeInQuoteCurrencyUnits = request.stepSize.scaleByPowerOfTen(quoteCurrency.scale);
+        if (!ArithmeticHelper.isIntegerValue(stepSizeInQuoteCurrencyUnits)) {
+            return RestControllerHelper.errorResponse(
+                    ApiErrorCodes.INVALID_CONFIGURATION,
+                    "step size must be integer if converted to quote currency units: " + stepSizeInQuoteCurrencyUnits);
+        }
+
         final GatewaySymbolSpec spec = GatewaySymbolSpec.builder()
                 .symbolId(symbolId)
                 .symbolCode(request.symbolCode)
@@ -108,14 +126,16 @@ public class SyncAdminApiSymbolsController {
                 .type(request.symbolType)
                 .baseCurrency(baseAsset.assetId)
                 .quoteCurrency(quoteCurrency.assetId)
+                .baseScaleK(lotSizeInBaseAssetUnits.longValue())
+                .quoteScaleK(stepSizeInQuoteCurrencyUnits.longValue())
                 // TODO fix
-                .baseScaleK(1)
-                .quoteScaleK(1)
                 .takerFee(1)
                 .makerFee(1)
                 .marginBuy(10)
                 .marginSell(10)
                 .build();
+
+        log.debug("Adding symbol {}", coreSpec);
 
         BatchAddSymbolsCommand batchAddSymbols = new BatchAddSymbolsCommand(coreSpec);
 

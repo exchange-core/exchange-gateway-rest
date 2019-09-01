@@ -7,20 +7,20 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public final class RestGenericResponse {
+public final class RestGenericResponse<T> {
 
     private final long ticket;
     private final int gatewayResultCode;
     private final int coreResultCode;
     private final String description;
-    private final Object data;
+    private final T data;
 
     public RestGenericResponse(
             @JsonProperty("ticket") long ticket,
             @JsonProperty("gatewayResultCode") int gatewayResultCode,
             @JsonProperty("coreResultCode") int coreResultCode,
             @JsonProperty("description") String description,
-            @JsonProperty("data") Object data) {
+            @JsonProperty("data") T data) {
 
         this.ticket = ticket;
         this.gatewayResultCode = gatewayResultCode;
@@ -31,6 +31,6 @@ public final class RestGenericResponse {
 
     @Override
     public String toString() {
-        return "[RESPONSE T:" + ticket + " RES:" + gatewayResultCode + " " + coreResultCode + "]";
+        return "[RESPONSE T:" + ticket + " RES:" + gatewayResultCode + " " + coreResultCode + " " + description + "]";
     }
 }

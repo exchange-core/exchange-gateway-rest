@@ -11,7 +11,10 @@ public enum ApiErrorCodes {
     ASSET_ALREADY_EXISTS(1003, 400, "asset already exists"),
     UNKNOWN_CURRENCY(1004, 400, "unknown currency"),
     PRECISION_IS_TOO_HIGH(1005, 400, "precision is too high, reduce precision"),
-    UNKNOWN_SYMBOL(1005, 400, "unknown symbol"),
+    UNKNOWN_SYMBOL(1006, 400, "unknown symbol"),
+    UNKNOWN_SYMBOL_404(1007, 404, "symbol not found"),
+
+    INVALID_CONFIGURATION(1008, 400, "invalid configuration: %s"),
     ;
 
     public final int gatewayErrorCode;

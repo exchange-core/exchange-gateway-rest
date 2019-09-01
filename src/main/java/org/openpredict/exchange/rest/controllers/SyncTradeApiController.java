@@ -1,6 +1,7 @@
 package org.openpredict.exchange.rest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.openpredict.exchange.beans.L2MarketData;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.core.ExchangeApi;
 import org.openpredict.exchange.core.ExchangeCore;
@@ -8,9 +9,11 @@ import org.openpredict.exchange.rest.GatewayState;
 import org.openpredict.exchange.rest.commands.ApiErrorCodes;
 import org.openpredict.exchange.rest.commands.RestApiMoveOrder;
 import org.openpredict.exchange.rest.commands.RestApiPlaceOrder;
+import org.openpredict.exchange.rest.commands.util.ArithmeticHelper;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
 import org.openpredict.exchange.rest.model.api.OrderState;
 import org.openpredict.exchange.rest.model.api.RestApiOrder;
+import org.openpredict.exchange.rest.model.api.RestApiOrderBook;
 import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -20,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -38,6 +43,41 @@ public class SyncTradeApiController {
     // TODO per user
     //private ConcurrentHashMap<Long, Long> userCookies = new ConcurrentHashMap<>();
 
+    @RequestMapping(value = "symbols/{symbol}/orderbook", method = RequestMethod.GET)
+
+    public ResponseEntity<RestGenericResponse> getOrderBook(
+            @PathVariable String symbol,
+            @RequestParam Integer depth) throws ExecutionException, InterruptedException {
+        log.info("ORDERBOOK >>> {} {}", symbol, depth);
+
+        GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbol);
+        if (symbolSpec == null) {
+            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
+        }
+
+        ExchangeApi api = exchangeCore.getApi();
+        CompletableFuture<ResponseEntity<RestGenericResponse>> future = new CompletableFuture<>();
+        api.orderBookRequest(symbolSpec.symbolId, depth, orderCommand -> {
+            L2MarketData marketData = orderCommand.marketData;
+            future.complete(RestControllerHelper.coreResponse(
+                    orderCommand,
+                    () -> RestApiOrderBook.builder()
+                            .symbol(symbol)
+                            .askPrices(Arrays.stream(marketData.askPrices).mapToObj(p -> ArithmeticHelper.fromLongPrice(p, symbolSpec)).collect(Collectors.toList()))
+                            .bidPrices(Arrays.stream(marketData.bidPrices).mapToObj(p -> ArithmeticHelper.fromLongPrice(p, symbolSpec)).collect(Collectors.toList()))
+                            .askVolumes(Arrays.stream(marketData.askVolumes).boxed().collect(Collectors.toList()))
+                            .bidVolumes(Arrays.stream(marketData.bidVolumes).boxed().collect(Collectors.toList()))
+                            .build(),
+                    HttpStatus.OK));
+        });
+
+        ResponseEntity<RestGenericResponse> response = future.get();
+        log.info("<<< ORDERBOOK {}", response);
+
+        return response;
+    }
+
+
     @RequestMapping(value = "symbols/{symbol}/trade/{uid}/orders", method = RequestMethod.POST)
     public ResponseEntity<RestGenericResponse> placeOrder(
             @PathVariable long uid,
@@ -48,7 +88,7 @@ public class SyncTradeApiController {
 
         GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbol);
         if (symbolSpec == null) {
-            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL);
+            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
         }
 
         // TODO correct formula to convert prices
@@ -103,7 +143,7 @@ public class SyncTradeApiController {
 
         GatewaySymbolSpec specification = gatewayState.getSymbolSpec(symbol);
         if (specification == null) {
-            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL);
+            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
         }
 
         // TODO correct formula to convert prices
@@ -147,7 +187,7 @@ public class SyncTradeApiController {
 
         GatewaySymbolSpec specification = gatewayState.getSymbolSpec(symbol);
         if (specification == null) {
-            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL);
+            return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
         }
 
         ExchangeApi api = exchangeCore.getApi();

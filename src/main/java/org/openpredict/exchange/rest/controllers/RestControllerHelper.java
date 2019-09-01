@@ -1,5 +1,6 @@
 package org.openpredict.exchange.rest.controllers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.cmd.CommandResultCode;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.rest.commands.ApiErrorCodes;
@@ -9,17 +10,21 @@ import org.springframework.http.ResponseEntity;
 
 import java.util.function.Supplier;
 
+@Slf4j
 public class RestControllerHelper {
 
     public static ResponseEntity<RestGenericResponse> errorResponse(ApiErrorCodes errMessage, String... args) {
-        return ResponseEntity
-                .status(errMessage.httpStatus)
-                .body(RestGenericResponse.builder()
-                        .ticket(0)
-                        .gatewayResultCode(errMessage.gatewayErrorCode)
-                        .coreResultCode(0)
-                        .description(String.format(errMessage.errorDescription, (Object[]) args))
-                        .build());
+
+        RestGenericResponse<Object> response = RestGenericResponse.builder()
+                .ticket(0)
+                .gatewayResultCode(errMessage.gatewayErrorCode)
+                .coreResultCode(0)
+                .description(String.format(errMessage.errorDescription, (Object[]) args))
+                .build();
+
+        log.info("return error: " + response);
+
+        return ResponseEntity.status(errMessage.httpStatus).body(response);
     }
 
     public static ResponseEntity<RestGenericResponse> coreResponse(OrderCommand cmd, Supplier<Object> successMapper, HttpStatus successCode) {

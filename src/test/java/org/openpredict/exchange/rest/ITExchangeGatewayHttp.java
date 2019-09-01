@@ -8,6 +8,7 @@ import org.openpredict.exchange.beans.OrderType;
 import org.openpredict.exchange.beans.SymbolType;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
+import org.openpredict.exchange.rest.model.api.RestApiOrderBook;
 import org.openpredict.exchange.rest.support.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,6 +16,11 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.util.Collections;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 
 @RunWith(SpringRunner.class)
 //@SpringBootTest
@@ -27,6 +33,8 @@ import java.math.BigDecimal;
 //@TestPropertySource(locations = "classpath:./it-local.properties")
 @Slf4j
 public class ITExchangeGatewayHttp {
+
+    public static final String SYMBOL_XBTC_USDT = "XBTC_USDT";
 
     @Autowired
     private TestService testService;
@@ -83,13 +91,13 @@ public class ITExchangeGatewayHttp {
         testService.adjustUserBalance(1001, "USDT", new BigDecimal("2692.44"), 713223L);
 
         testService.addSymbol(new RestApiAddSymbol(
-                "XBTC_USDT",
+                SYMBOL_XBTC_USDT,
                 3199,
                 SymbolType.CURRENCY_EXCHANGE_PAIR,
                 "XBTC",
                 "USDT",
-                new BigDecimal("0.1"),
-                new BigDecimal("0.01"),
+                new BigDecimal("0.1"), // lot size
+                new BigDecimal("0.01"), // step size
                 new BigDecimal("0.08"),
                 new BigDecimal("0.03"),
                 BigDecimal.ZERO,
@@ -98,8 +106,31 @@ public class ITExchangeGatewayHttp {
                 new BigDecimal("1000")));
 
 
-        long orderId = testService.placeOrder("XBTC_USDT", 1001, BigDecimal.valueOf(829.33), 3, 4124, OrderAction.BID, OrderType.GTC);
+        // place order
+        long orderId = testService.placeOrder(SYMBOL_XBTC_USDT, 1001, new BigDecimal("829.33"), 3, 4124, OrderAction.BID, OrderType.GTC);
+
+        RestApiOrderBook expected = RestApiOrderBook.builder()
+                .symbol(SYMBOL_XBTC_USDT)
+                .askPrices(Collections.emptyList())
+                .askVolumes(Collections.emptyList())
+                .bidPrices(Collections.singletonList(new BigDecimal("829.33")))
+                .bidVolumes(Collections.singletonList(3L))
+                .build();
+
+        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected));
+
+        // move order
+
         testService.moveOrder(orderId, "XBTC_USDT", 1001, BigDecimal.valueOf(829.29));
+
+        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.singletonList(new BigDecimal("829.29")))));
+
+
+        // cancel order
+
         testService.cancelOrder(orderId, "XBTC_USDT", 1001);
+
+        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.emptyList()).withBidVolumes(Collections.emptyList())));
+
     }
 }

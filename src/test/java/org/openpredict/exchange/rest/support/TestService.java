@@ -1,5 +1,7 @@
 package org.openpredict.exchange.rest.support;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.OrderAction;
@@ -10,6 +12,8 @@ import org.openpredict.exchange.rest.commands.admin.RestApiAccountBalanceAdjustm
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
+import org.openpredict.exchange.rest.events.RestGenericResponse;
+import org.openpredict.exchange.rest.model.api.RestApiOrderBook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -206,7 +210,7 @@ public class TestService extends TestSupport {
 
         String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders/%d", symbol, uid, orderId);
 
-        MvcResult result = mockMvc.perform(delete(url).contentType(applicationJson))
+        MvcResult result = mockMvc.perform(delete(url))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(applicationJson))
                 //.andExpect(jsonPath("$.data", is((int) uid)))
@@ -216,6 +220,32 @@ public class TestService extends TestSupport {
 
         String contentAsString = result.getResponse().getContentAsString();
         log.debug("contentAsString=" + contentAsString);
+    }
+
+    public RestApiOrderBook getOrderBook(String symbol) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/orderbook", symbol);
+
+        MvcResult result = mockMvc.perform(get(url).param("depth", "-1"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+                .andExpect(jsonPath("$.data.symbol", is(symbol)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+
+        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
+        TypeReference<RestGenericResponse<RestApiOrderBook>> typeReference = new TypeReference<RestGenericResponse<RestApiOrderBook>>() {
+        };
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestGenericResponse<RestApiOrderBook> x = objectMapper.readValue(contentAsString, typeReference);
+
+        log.debug("re=" + x);
+
+        return x.getData();
     }
 
 }

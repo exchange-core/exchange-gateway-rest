@@ -17,8 +17,8 @@ public final class RestApiAddSymbol {
 
     public final String baseAsset;     // base asset
     public final String quoteCurrency; // quote/counter currency (OR futures contract currency)
-    public final BigDecimal lotSize;
-    public final BigDecimal stepSize;
+    public final BigDecimal lotSize; // lot size in base asset units
+    public final BigDecimal stepSize; // step size in quote currency units
 
     public final BigDecimal takerFee; // TODO check invariant: taker fee is not less than maker fee
     public final BigDecimal makerFee;
