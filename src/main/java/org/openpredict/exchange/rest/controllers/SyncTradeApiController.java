@@ -91,10 +91,11 @@ public class SyncTradeApiController {
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
         }
 
-        // TODO correct formula to convert prices
-        final long longPrice = placeOrder.getPrice()
-                .scaleByPowerOfTen(symbolSpec.quoteCurrency.scale)
-                .longValue();
+        final BigDecimal priceInQuoteCurrencyUnits = ArithmeticHelper.toBaseUnits(placeOrder.getPrice(), symbolSpec.quoteCurrency);
+        if (!ArithmeticHelper.isIntegerValue(priceInQuoteCurrencyUnits)) {
+            return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_PRICE);
+        }
+        final long price = priceInQuoteCurrencyUnits.longValue();
 
         // TODO perform conversions
 
@@ -102,15 +103,15 @@ public class SyncTradeApiController {
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
         long orderId = api.placeNewOrder(
                 0,
-                longPrice,
-                longPrice, // same price (can not move bids up in exchange mode)
+                price,
+                price, // same price (can not move bids up in exchange mode)
                 placeOrder.getSize(),
                 placeOrder.getAction(),
                 placeOrder.getOrderType(),
                 symbolSpec.symbolId,
                 uid,
                 future::complete);
-        log.info("placeing orderId {}", orderId);
+        log.info("placing orderId {}", orderId);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< PLACE ORDER {}", orderCommand);
@@ -141,20 +142,22 @@ public class SyncTradeApiController {
 
         log.info("MOVE ORDER >>> {} uid={} {}", orderId, uid, moveOrder);
 
-        GatewaySymbolSpec specification = gatewayState.getSymbolSpec(symbol);
-        if (specification == null) {
+        GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbol);
+        if (symbolSpec == null) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404);
         }
 
-        // TODO correct formula to convert prices
-        final long longPrice = moveOrder.getPrice().longValue();
+        final BigDecimal priceInQuoteCurrencyUnits = ArithmeticHelper.toBaseUnits(moveOrder.getPrice(), symbolSpec.quoteCurrency);
+        if (!ArithmeticHelper.isIntegerValue(priceInQuoteCurrencyUnits)) {
+            return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_PRICE);
+        }
 
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
         api.moveOrder(
-                longPrice,
+                priceInQuoteCurrencyUnits.longValue(),
                 orderId,
-                specification.symbolId,
+                symbolSpec.symbolId,
                 uid,
                 future::complete);
 

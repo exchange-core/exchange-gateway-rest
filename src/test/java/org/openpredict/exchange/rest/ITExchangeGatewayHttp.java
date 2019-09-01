@@ -13,6 +13,7 @@ import org.openpredict.exchange.rest.support.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
@@ -40,15 +41,18 @@ public class ITExchangeGatewayHttp {
     private TestService testService;
 
     @Test
+    @DirtiesContext
     public void contextStarts() {
     }
 
     @Test
+    @DirtiesContext
     public void shouldAddNewAsset() throws Exception {
         testService.addAsset(new RestApiAsset("XBTC", 123, 8));
     }
 
     @Test
+    @DirtiesContext
     public void shouldAddNewSymbol() throws Exception {
 
         testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
@@ -71,11 +75,13 @@ public class ITExchangeGatewayHttp {
     }
 
     @Test
+    @DirtiesContext
     public void shouldCreateUser() throws Exception {
         testService.createUser(123);
     }
 
     @Test
+    @DirtiesContext
     public void shouldAdjustUserBalance() throws Exception {
         testService.createUser(7332);
         testService.addAsset(new RestApiAsset("USDT", 3412, 2));
@@ -83,6 +89,7 @@ public class ITExchangeGatewayHttp {
     }
 
     @Test
+    @DirtiesContext
     public void shouldPlaceMoveCancelLimitOrder() throws Exception {
         testService.createUser(1001);
         testService.addAsset(new RestApiAsset("XBTC", 9123, 8));

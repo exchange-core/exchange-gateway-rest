@@ -15,6 +15,8 @@ public enum ApiErrorCodes {
     UNKNOWN_SYMBOL_404(1007, 404, "symbol not found"),
 
     INVALID_CONFIGURATION(1008, 400, "invalid configuration: %s"),
+
+    INVALID_PRICE(1009, 400, "invalid price"),
     ;
 
     public final int gatewayErrorCode;

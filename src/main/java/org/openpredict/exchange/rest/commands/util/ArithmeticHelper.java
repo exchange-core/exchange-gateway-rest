@@ -1,6 +1,7 @@
 package org.openpredict.exchange.rest.commands.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
 
 import java.math.BigDecimal;
@@ -9,7 +10,7 @@ import java.math.BigDecimal;
 public class ArithmeticHelper {
 
     /**
-     * Convert price for one lot (order book price) from core long to BigDecibal.
+     * Convert price for one lot (order book price) from core long to BigDecimal.
      *
      * @param price      core price
      * @param symbolSpec gateway symbol spec
@@ -23,6 +24,10 @@ public class ArithmeticHelper {
         BigDecimal res = BigDecimal.valueOf(price).scaleByPowerOfTen(-symbolSpec.quoteCurrency.scale);
         //log.debug("res={}",res);
         return res;
+    }
+
+    public static BigDecimal toBaseUnits(BigDecimal price, GatewayAssetSpec assetSpec) {
+        return price.scaleByPowerOfTen(assetSpec.scale);
     }
 
     /**
