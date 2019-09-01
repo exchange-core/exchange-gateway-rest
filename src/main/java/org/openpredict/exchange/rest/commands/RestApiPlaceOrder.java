@@ -7,38 +7,31 @@ import lombok.Getter;
 import org.openpredict.exchange.beans.OrderAction;
 import org.openpredict.exchange.beans.OrderType;
 
+import java.math.BigDecimal;
+
 @Getter
 public final class RestApiPlaceOrder {
 
-    private final String price;
-    private final String size;
+    private final BigDecimal price;
+    private final long size; // only integer sizes allowed
 
-    //private final long cookieId;
+    private final long userCookie;
     private final OrderAction action;
     private final OrderType orderType;
 
-    private final String symbol;
-
-    // TODO remove
-    private final long uid;
-
     @JsonCreator
     public RestApiPlaceOrder(
-            @JsonProperty("price") String price,
-            @JsonProperty("size") String size,
-            //@JsonProperty("cookieId") long cookieId,
+            @JsonProperty("price") BigDecimal price,
+            @JsonProperty("size") long size,
+            @JsonProperty("userCookie") long userCookie,
             @JsonProperty("action") OrderAction action,
-            @JsonProperty("orderType") OrderType orderType,
-            @JsonProperty("uid") long uid,
-            @JsonProperty("symbol") String symbol) {
+            @JsonProperty("orderType") OrderType orderType) {
 
         this.price = price;
         this.size = size;
-//        this.cookieId = cookieId;
+        this.userCookie = userCookie;
         this.action = action;
         this.orderType = orderType;
-        this.uid = uid;
-        this.symbol = symbol;
     }
 
     @Override

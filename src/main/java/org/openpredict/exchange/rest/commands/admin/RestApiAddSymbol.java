@@ -3,56 +3,69 @@ package org.openpredict.exchange.rest.commands.admin;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
+import lombok.Builder;
+import org.openpredict.exchange.beans.SymbolType;
 
-@Getter
+import java.math.BigDecimal;
+
 public final class RestApiAddSymbol {
 
-    // unmodifiable properties
-    private final int symbolId;
-    private final String symbolName;
+    public final int symbolId;
+    public final String symbolCode;
 
-    // unmodifiable properties (gateway level)
-    private final int priceStep; // price % priceStep == 0
-    private final int priceScale; // decimal point position
-    private final int lotSize;
+    public final SymbolType symbolType;
 
+    public final String baseAsset;     // base asset
+    public final String quoteCurrency; // quote/counter currency (OR futures contract currency)
+    public final BigDecimal lotSize; // lot size in base asset units
+    public final BigDecimal stepSize; // step size in quote currency units
 
-    // modifiable properties (core level)
-    // deposit settings
-    private final long depositBuy;
-    private final long depositSell;
+    public final BigDecimal takerFee; // TODO check invariant: taker fee is not less than maker fee
+    public final BigDecimal makerFee;
 
-    // order book limits
-    private final long priceHighLimit;
-    private final long priceLowLimit;
+    public final BigDecimal marginBuy;
+    public final BigDecimal marginSell;
 
+    public final BigDecimal priceHighLimit;
+    public final BigDecimal priceLowLimit;
 
     @JsonCreator
+    @Builder
     public RestApiAddSymbol(
-            @JsonProperty("symbolName") String symbolName,
+            @JsonProperty("symbolCode") String symbolCode,
             @JsonProperty("symbolId") int symbolId,
-            @JsonProperty("priceStep") int priceStep,
-            @JsonProperty("priceScale") int priceScale,
-            @JsonProperty("lotSize") int lotSize,
-            @JsonProperty("depositBuy") long depositBuy,
-            @JsonProperty("depositSell") long depositSell,
-            @JsonProperty("priceHighLimit") long priceHighLimit,
-            @JsonProperty("priceLowLimit") long priceLowLimit) {
+            @JsonProperty("symbolType") SymbolType symbolType,
+            @JsonProperty("baseAsset") String baseAsset,
+            @JsonProperty("quoteCurrency") String quoteCurrency,
+            @JsonProperty("lotSize") BigDecimal lotSize,
+            @JsonProperty("stepSize") BigDecimal stepSize,
+            @JsonProperty("takerFee") BigDecimal takerFee,
+            @JsonProperty("makerFee") BigDecimal makerFee,
+            @JsonProperty("marginBuy") BigDecimal marginBuy,
+            @JsonProperty("marginSell") BigDecimal marginSell,
+            @JsonProperty("priceHighLimit") BigDecimal priceHighLimit,
+            @JsonProperty("priceLowLimit") BigDecimal priceLowLimit) {
 
-        this.symbolName = symbolName;
+        this.symbolCode = symbolCode;
         this.symbolId = symbolId;
-        this.priceStep = priceStep;
-        this.priceScale = priceScale;
+
+        this.symbolType = symbolType;
+
+        this.baseAsset = baseAsset;
+        this.quoteCurrency = quoteCurrency;
         this.lotSize = lotSize;
-        this.depositBuy = depositBuy;
-        this.depositSell = depositSell;
+        this.stepSize = stepSize;
+        this.takerFee = takerFee;
+        this.makerFee = makerFee;
+
+        this.marginBuy = marginBuy;
+        this.marginSell = marginSell;
         this.priceHighLimit = priceHighLimit;
         this.priceLowLimit = priceLowLimit;
     }
 
     @Override
     public String toString() {
-        return "[ADDSYMBOL " + symbolName + " " + symbolId + "]";
+        return "[ADDSYMBOL " + symbolCode + " " + symbolId + "]";
     }
 }

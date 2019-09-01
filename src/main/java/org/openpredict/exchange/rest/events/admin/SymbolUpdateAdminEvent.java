@@ -14,7 +14,7 @@ public final class SymbolUpdateAdminEvent {
     private final String msgType = "adm_symbol_update";
 
     private final int symbolId;
-    private final String symbolName;
+    private final String symbolCode;
 
     // unmodifiable properties (gateway level)
     private final int priceStep; // price % priceStep == 0

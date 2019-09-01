@@ -5,26 +5,31 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
+import java.math.BigDecimal;
+
 @Getter
 public final class RestApiAccountBalanceAdjustment {
 
-    private final long uid;
-    private final long transactionId;
-    private final String amount;
+    //public final long uid;
+    public final long transactionId;
+    public final BigDecimal amount;
+    public final String currency;
 
     @JsonCreator
     public RestApiAccountBalanceAdjustment(
-            @JsonProperty("uid") long uid,
+            //@JsonProperty("uid") long uid,
             @JsonProperty("transactionId") long transactionId,
-            @JsonProperty("amount") String amount) {
+            @JsonProperty("amount") BigDecimal amount,
+            @JsonProperty("currency") String currency) {
 
-        this.uid = uid;
+        //this.uid = uid;
         this.transactionId = transactionId;
         this.amount = amount;
+        this.currency = currency;
     }
 
     @Override
     public String toString() {
-        return "[BALANCE_ADJ " + uid + " for " + amount + " transactionId:" + transactionId + "]";
+        return "[BALANCE_ADJ " + amount + " " + currency + " transactionId:" + transactionId + "]";
     }
 }
