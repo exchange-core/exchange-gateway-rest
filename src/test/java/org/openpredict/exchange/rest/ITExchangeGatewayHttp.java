@@ -9,6 +9,7 @@ import org.openpredict.exchange.beans.SymbolType;
 import org.openpredict.exchange.rest.commands.admin.RestApiAddSymbol;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.model.api.RestApiOrderBook;
+import org.openpredict.exchange.rest.model.api.RestApiUserState;
 import org.openpredict.exchange.rest.support.TestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -96,6 +97,10 @@ public class ITExchangeGatewayHttp {
         testService.addAsset(new RestApiAsset("USDT", 3412, 2));
 
         testService.adjustUserBalance(1001, "USDT", new BigDecimal("2692.44"), 713223L);
+
+        RestApiUserState userState = testService.getUserState(1001);
+
+        log.debug("userState-{}", userState);
 
         testService.addSymbol(new RestApiAddSymbol(
                 SYMBOL_XBTC_USDT,

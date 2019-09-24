@@ -17,6 +17,7 @@ public enum ApiErrorCodes {
     INVALID_CONFIGURATION(1008, 400, "invalid configuration: %s"),
 
     INVALID_PRICE(1009, 400, "invalid price"),
+    UNKNOWN_USER_404(1010, 404, "unknown user"),
     ;
 
     public final int gatewayErrorCode;

@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping(value = "syncTradeApi/v1/", produces = MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8")
-public class SyncTradeApiController {
+public class SyncTradeOrdersApiController {
 
     @Autowired
     private ExchangeCore exchangeCore;
@@ -44,7 +44,6 @@ public class SyncTradeApiController {
     //private ConcurrentHashMap<Long, Long> userCookies = new ConcurrentHashMap<>();
 
     @RequestMapping(value = "symbols/{symbol}/orderbook", method = RequestMethod.GET)
-
     public ResponseEntity<RestGenericResponse> getOrderBook(
             @PathVariable String symbol,
             @RequestParam Integer depth) throws ExecutionException, InterruptedException {
@@ -92,7 +91,7 @@ public class SyncTradeApiController {
         }
 
         final BigDecimal priceInQuoteCurrencyUnits = ArithmeticHelper.toBaseUnits(placeOrder.getPrice(), symbolSpec.quoteCurrency);
-        if (!ArithmeticHelper.isIntegerValue(priceInQuoteCurrencyUnits)) {
+        if (!ArithmeticHelper.isIntegerNotNegativeValue(priceInQuoteCurrencyUnits)) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_PRICE);
         }
         final long price = priceInQuoteCurrencyUnits.longValue();
@@ -119,8 +118,8 @@ public class SyncTradeApiController {
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
                 .orderId(orderCommand.orderId)
-                .size(BigDecimal.valueOf(orderCommand.size))
-                .filled(BigDecimal.valueOf(-1))
+                .size(orderCommand.size)
+                .filled(0)
                 .state(OrderState.NEW)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)
@@ -148,7 +147,7 @@ public class SyncTradeApiController {
         }
 
         final BigDecimal priceInQuoteCurrencyUnits = ArithmeticHelper.toBaseUnits(moveOrder.getPrice(), symbolSpec.quoteCurrency);
-        if (!ArithmeticHelper.isIntegerValue(priceInQuoteCurrencyUnits)) {
+        if (!ArithmeticHelper.isIntegerNotNegativeValue(priceInQuoteCurrencyUnits)) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_PRICE);
         }
 
@@ -167,8 +166,8 @@ public class SyncTradeApiController {
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
                 .orderId(orderCommand.orderId)
-                .size(BigDecimal.valueOf(orderCommand.size))
-                .filled(BigDecimal.valueOf(-1))
+                .size(orderCommand.size)
+                .filled(-1)
                 .state(OrderState.ACTIVE)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)
@@ -207,8 +206,8 @@ public class SyncTradeApiController {
         // TODO extract method and fix values
         RestApiOrder result = RestApiOrder.builder()
                 .orderId(orderCommand.orderId)
-                .size(BigDecimal.valueOf(orderCommand.size))
-                .filled(BigDecimal.valueOf(-1))
+                .size(orderCommand.size)
+                .filled(-1)
                 .state(OrderState.CANCELLED)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)

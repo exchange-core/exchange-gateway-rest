@@ -17,8 +17,8 @@ public final class RestApiOrder {
     private final long orderId;
 
     private final BigDecimal price;
-    private final BigDecimal size;
-    private final BigDecimal filled;
+    private final long size;
+    private final long filled;
 
     private final OrderState state;
 
@@ -38,8 +38,8 @@ public final class RestApiOrder {
     public RestApiOrder(
             @JsonProperty("orderId") long orderId,
             @JsonProperty("price") BigDecimal price,
-            @JsonProperty("size") BigDecimal size,
-            @JsonProperty("filled") BigDecimal filled,
+            @JsonProperty("size") long size,
+            @JsonProperty("filled") long filled,
             @JsonProperty("userCookie") long userCookie,
             @JsonProperty("state") OrderState state,
             @JsonProperty("action") OrderAction action,

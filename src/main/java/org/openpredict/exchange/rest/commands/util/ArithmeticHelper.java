@@ -26,18 +26,37 @@ public class ArithmeticHelper {
         return res;
     }
 
+    public static BigDecimal fromLongPrice(long price, GatewayAssetSpec assetSpecSpec) {
+        return BigDecimal.valueOf(price).scaleByPowerOfTen(-assetSpecSpec.scale);
+    }
+
     public static BigDecimal toBaseUnits(BigDecimal price, GatewayAssetSpec assetSpec) {
         return price.scaleByPowerOfTen(assetSpec.scale);
     }
 
     /**
-     * Check if BigDecimal is integer value
+     * Check if BigDecimal is integer value and >=0
      *
      * @param value - value to examine
-     * @return tre if it is integer
+     * @return tre if it is integer and not negative
      */
-    public static boolean isIntegerValue(BigDecimal value) {
+    public static boolean isIntegerNotNegativeValue(BigDecimal value) {
         //log.debug("value={} scale()={}", value, value.stripTrailingZeros().scale());
-        return value.stripTrailingZeros().scale() <= 0;
+        return value.compareTo(BigDecimal.ZERO) >= 0 && value.stripTrailingZeros().scale() <= 0;
+    }
+
+    /**
+     * Check if BigDecimal is integer value and >0
+     *
+     * @param value - value to examine
+     * @return tre if it is integer and positive
+     */
+    public static boolean isIntegerPositiveNotZeroValue(BigDecimal value) {
+        //log.debug("value={} scale()={}", value, value.stripTrailingZeros().scale());
+        return value.compareTo(BigDecimal.ZERO) > 0 && value.stripTrailingZeros().scale() <= 0;
+    }
+
+    public static boolean isZero(BigDecimal value) {
+        return value.compareTo(BigDecimal.ZERO) == 0;
     }
 }

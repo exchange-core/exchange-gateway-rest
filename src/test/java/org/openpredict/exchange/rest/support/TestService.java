@@ -14,6 +14,7 @@ import org.openpredict.exchange.rest.commands.admin.RestApiAddUser;
 import org.openpredict.exchange.rest.commands.admin.RestApiAsset;
 import org.openpredict.exchange.rest.events.RestGenericResponse;
 import org.openpredict.exchange.rest.model.api.RestApiOrderBook;
+import org.openpredict.exchange.rest.model.api.RestApiUserState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
@@ -242,6 +243,32 @@ public class TestService extends TestSupport {
         };
         ObjectMapper objectMapper = new ObjectMapper();
         RestGenericResponse<RestApiOrderBook> x = objectMapper.readValue(contentAsString, typeReference);
+
+        log.debug("re=" + x);
+
+        return x.getData();
+    }
+
+    public RestApiUserState getUserState(long uid) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/users/%d/state", uid);
+
+        MvcResult result = mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+                .andExpect(jsonPath("$.data.uid", is((int)uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+//                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+
+        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
+        TypeReference<RestGenericResponse<RestApiUserState>> typeReference = new TypeReference<RestGenericResponse<RestApiUserState>>() {
+        };
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestGenericResponse<RestApiUserState> x = objectMapper.readValue(contentAsString, typeReference);
 
         log.debug("re=" + x);
 

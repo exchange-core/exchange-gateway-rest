@@ -27,6 +27,7 @@ public class GatewayState {
     private final Map<Integer, GatewaySymbolSpec> symbolsById = new ConcurrentHashMap<>();
 
     private final Map<String, GatewayAssetSpec> assetsByCode = new ConcurrentHashMap<>();
+    private final Map<Integer, GatewayAssetSpec> assetsById = new ConcurrentHashMap<>();
 
     @Autowired
     private ExchangeCore exchangeCore;
@@ -50,13 +51,20 @@ public class GatewayState {
     public boolean registerNewAsset(GatewayAssetSpec spec) {
 
         // TODO implement validation and lifesycle
-        return assetsByCode.putIfAbsent(spec.assetCode, spec) == null;
+        if (assetsByCode.putIfAbsent(spec.assetCode, spec) == null) {
+            assetsById.put(spec.assetId, spec);
+            return true;
+        }
+        return false;
     }
 
     public GatewayAssetSpec getAssetSpec(String assetCode) {
         return assetsByCode.get(assetCode);
     }
 
+    public GatewayAssetSpec getAssetSpec(int assetId) {
+        return assetsById.get(assetId);
+    }
 
     public GatewaySymbolSpec activateSymbol(final int symbolId) {
 
@@ -73,13 +81,13 @@ public class GatewayState {
     }
 
     @PostConstruct
-    public void start(){
+    public void start() {
         log.debug("START1");
         exchangeCore.startup();
     }
 
     @PreDestroy
-    public void stop(){
+    public void stop() {
         log.debug("STOP1");
         exchangeCore.shutdown();
     }

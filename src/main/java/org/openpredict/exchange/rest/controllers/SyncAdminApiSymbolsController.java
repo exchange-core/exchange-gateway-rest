@@ -2,6 +2,7 @@ package org.openpredict.exchange.rest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.openpredict.exchange.beans.CoreSymbolSpecification;
+import org.openpredict.exchange.beans.SymbolType;
 import org.openpredict.exchange.beans.api.binary.BatchAddSymbolsCommand;
 import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.core.ExchangeApi;
@@ -85,18 +86,66 @@ public class SyncAdminApiSymbolsController {
 
         // lot size in base asset units
         final BigDecimal lotSizeInBaseAssetUnits = request.lotSize.scaleByPowerOfTen(baseAsset.scale);
-        if (!ArithmeticHelper.isIntegerValue(lotSizeInBaseAssetUnits)) {
+        if (!ArithmeticHelper.isIntegerPositiveNotZeroValue(lotSizeInBaseAssetUnits)) {
             return RestControllerHelper.errorResponse(
                     ApiErrorCodes.INVALID_CONFIGURATION,
-                    "lot size must be integer when converted to base asset units: " + lotSizeInBaseAssetUnits);
+                    "lot size must be integer and positive when converted to base asset units: " + lotSizeInBaseAssetUnits);
         }
 
         // step size in quote currency units
         final BigDecimal stepSizeInQuoteCurrencyUnits = request.stepSize.scaleByPowerOfTen(quoteCurrency.scale);
-        if (!ArithmeticHelper.isIntegerValue(stepSizeInQuoteCurrencyUnits)) {
+        if (!ArithmeticHelper.isIntegerPositiveNotZeroValue(stepSizeInQuoteCurrencyUnits)) {
             return RestControllerHelper.errorResponse(
                     ApiErrorCodes.INVALID_CONFIGURATION,
-                    "step size must be integer if converted to quote currency units: " + stepSizeInQuoteCurrencyUnits);
+                    "step size must be integer and positive when converted to quote currency units: " + stepSizeInQuoteCurrencyUnits);
+        }
+
+        // taker fee in quote currency units
+        final BigDecimal takerFeeInQuoteCurrencyUnits = request.takerFee.scaleByPowerOfTen(quoteCurrency.scale);
+        if (!ArithmeticHelper.isIntegerNotNegativeValue(takerFeeInQuoteCurrencyUnits)) {
+            return RestControllerHelper.errorResponse(
+                    ApiErrorCodes.INVALID_CONFIGURATION,
+                    "taker fee must be integer and not negative when converted to quote currency units: " + takerFeeInQuoteCurrencyUnits);
+        }
+
+        // maker fee in quote currency units
+        final BigDecimal makerFeeInQuoteCurrencyUnits = request.makerFee.scaleByPowerOfTen(quoteCurrency.scale);
+        if (!ArithmeticHelper.isIntegerNotNegativeValue(makerFeeInQuoteCurrencyUnits)) {
+            return RestControllerHelper.errorResponse(
+                    ApiErrorCodes.INVALID_CONFIGURATION,
+                    "maker fee must be integer and not negative when converted to quote currency units: " + makerFeeInQuoteCurrencyUnits);
+        }
+
+        // maker/taker fee invariant validation
+        if (takerFeeInQuoteCurrencyUnits.longValue() < makerFeeInQuoteCurrencyUnits.longValue()) {
+            return RestControllerHelper.errorResponse(
+                    ApiErrorCodes.INVALID_CONFIGURATION,
+                    "taker fee " + takerFeeInQuoteCurrencyUnits + " can not be less than maker fee " + makerFeeInQuoteCurrencyUnits);
+        }
+
+        // margin buy in quote currency units
+        final BigDecimal marginBuyInQuoteCurrencyUnits = request.marginBuy.scaleByPowerOfTen(quoteCurrency.scale);
+        final BigDecimal marginSellInQuoteCurrencyUnits = request.marginSell.scaleByPowerOfTen(quoteCurrency.scale);
+
+        log.debug("MARGIN {} {}", marginBuyInQuoteCurrencyUnits, marginSellInQuoteCurrencyUnits);
+        if (request.symbolType == SymbolType.CURRENCY_EXCHANGE_PAIR) {
+            // margin must be zero in exchange mode
+            if (!ArithmeticHelper.isZero(marginBuyInQuoteCurrencyUnits) || !ArithmeticHelper.isZero(marginSellInQuoteCurrencyUnits)) {
+                return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_CONFIGURATION, "margin must be zero in exchange mode");
+            }
+
+        } else {
+
+            if (!ArithmeticHelper.isIntegerPositiveNotZeroValue(marginBuyInQuoteCurrencyUnits)) {
+                return RestControllerHelper.errorResponse(
+                        ApiErrorCodes.INVALID_CONFIGURATION,
+                        "buy margin must be integer and positive when converted to quote currency units: " + marginBuyInQuoteCurrencyUnits);
+            }
+            if (!ArithmeticHelper.isIntegerPositiveNotZeroValue(marginSellInQuoteCurrencyUnits)) {
+                return RestControllerHelper.errorResponse(
+                        ApiErrorCodes.INVALID_CONFIGURATION,
+                        "sell margin must be integer and positive when converted to quote currency units: " + marginSellInQuoteCurrencyUnits);
+            }
         }
 
         final GatewaySymbolSpec spec = GatewaySymbolSpec.builder()
@@ -128,11 +177,10 @@ public class SyncAdminApiSymbolsController {
                 .quoteCurrency(quoteCurrency.assetId)
                 .baseScaleK(lotSizeInBaseAssetUnits.longValue())
                 .quoteScaleK(stepSizeInQuoteCurrencyUnits.longValue())
-                // TODO fix
-                .takerFee(1)
-                .makerFee(1)
-                .marginBuy(10)
-                .marginSell(10)
+                .takerFee(takerFeeInQuoteCurrencyUnits.longValue())
+                .makerFee(makerFeeInQuoteCurrencyUnits.longValue())
+                .marginBuy(marginBuyInQuoteCurrencyUnits.longValue())
+                .marginSell(marginSellInQuoteCurrencyUnits.longValue())
                 .build();
 
         log.debug("Adding symbol {}", coreSpec);
