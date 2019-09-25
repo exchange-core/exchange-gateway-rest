@@ -101,7 +101,7 @@ public class SyncTradeOrdersApiController {
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
         long orderId = api.placeNewOrder(
-                0,
+                placeOrder.getUserCookie(),
                 price,
                 price, // same price (can not move bids up in exchange mode)
                 placeOrder.getSize(),

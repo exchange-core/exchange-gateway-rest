@@ -15,7 +15,7 @@ public final class RestApiPlaceOrder {
     private final BigDecimal price;
     private final long size; // only integer sizes allowed
 
-    private final long userCookie;
+    private final int userCookie;
     private final OrderAction action;
     private final OrderType orderType;
 
@@ -23,7 +23,7 @@ public final class RestApiPlaceOrder {
     public RestApiPlaceOrder(
             @JsonProperty("price") BigDecimal price,
             @JsonProperty("size") long size,
-            @JsonProperty("userCookie") long userCookie,
+            @JsonProperty("userCookie") int userCookie,
             @JsonProperty("action") OrderAction action,
             @JsonProperty("orderType") OrderType orderType) {
 

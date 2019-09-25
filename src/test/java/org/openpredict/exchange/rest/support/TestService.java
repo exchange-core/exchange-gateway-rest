@@ -158,7 +158,7 @@ public class TestService extends TestSupport {
         log.debug("contentAsString=" + contentAsString);
     }
 
-    public long placeOrder(String symbol, long uid, BigDecimal price, long size, long userCookie, OrderAction action, OrderType type) throws Exception {
+    public long placeOrder(String symbol, long uid, BigDecimal price, long size, int userCookie, OrderAction action, OrderType type) throws Exception {
 
         String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/trade/%d/orders", symbol, uid);
 
@@ -166,7 +166,6 @@ public class TestService extends TestSupport {
 
         String rawRequest = json(request);
         log.debug("request: \n{}", rawRequest);
-
 
         MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
                 .andExpect(status().isCreated())
@@ -256,7 +255,7 @@ public class TestService extends TestSupport {
         MvcResult result = mockMvc.perform(get(url))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(applicationJson))
-                .andExpect(jsonPath("$.data.uid", is((int)uid)))
+                .andExpect(jsonPath("$.data.uid", is((int) uid)))
                 .andExpect(jsonPath("$.gatewayResultCode", is(0)))
 //                .andExpect(jsonPath("$.coreResultCode", is(100)))
                 .andReturn();

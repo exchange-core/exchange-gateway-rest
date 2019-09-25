@@ -16,6 +16,7 @@ import org.openpredict.exchange.rest.model.api.RestApiAccountState;
 import org.openpredict.exchange.rest.model.api.RestApiOrder;
 import org.openpredict.exchange.rest.model.api.RestApiUserState;
 import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
+import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -52,19 +53,24 @@ public class SyncTradeAccountApiController {
 
         if (reportResult.getStatus() == SingleUserReportResult.ExecutionStatus.OK) {
 
-            final List<RestApiOrder> activeOrders = reportResult.getOrders().stream().map(coreOrder ->
-                    RestApiOrder.builder()
-                            .orderId(coreOrder.orderId)
-                            .size(coreOrder.size)
-                            .filled(coreOrder.filled)
-                            .state(OrderState.ACTIVE)
-                            .userCookie(coreOrder.userCookie)
-                            .action(coreOrder.action)
-                            .orderType(OrderType.GTC)
-                            // TODO collect symbols and deals?
-                            .symbol("??TODO") // gatewayState.getSymbolSpec(coreOrder.).symbolCode
-                            .deals(Collections.emptyList())
-                            .build()).collect(Collectors.toList());
+            final List<RestApiOrder> activeOrders = new ArrayList<>();
+
+            reportResult.getOrders().forEachKeyValue((symbolId, ordersList) -> {
+
+                final GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbolId);
+                ordersList.forEach(coreOrder -> activeOrders.add(RestApiOrder.builder()
+                        .orderId(coreOrder.orderId)
+                        .size(coreOrder.size)
+                        .filled(coreOrder.filled)
+                        .price(ArithmeticHelper.fromLongPrice(coreOrder.price, symbolSpec))
+                        .state(OrderState.ACTIVE)
+                        .action(coreOrder.action)
+                        .orderType(OrderType.GTC)
+                        .symbol(symbolSpec.symbolCode)
+                        .deals(Collections.emptyList())
+                        //  TODO   .userCookie(coreOrder.userCookie)
+                        .build()));
+            });
 
             final IntLongHashMap profileAccounts = reportResult.getUserProfile().accounts;
 
