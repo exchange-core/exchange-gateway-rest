@@ -6,10 +6,10 @@ import lombok.AllArgsConstructor;
 public enum OrderState {
 
     NEW,
-    PENDING,
+//    PENDING,
     ACTIVE, // new or partiallyFiled
     FILLED, // filled
-    CANCELLED, // can be partially filled
-    REJECTED // can be partially filled
+    CANCELLED, // can be partially filled before cancelled
+    REJECTED // can be partially filled before rejected
 
 }

@@ -94,6 +94,7 @@ public class SyncTradeOrdersApiController {
         if (!ArithmeticHelper.isIntegerNotNegativeValue(priceInQuoteCurrencyUnits)) {
             return RestControllerHelper.errorResponse(ApiErrorCodes.INVALID_PRICE);
         }
+
         final long price = priceInQuoteCurrencyUnits.longValue();
 
         // TODO perform conversions
@@ -111,6 +112,9 @@ public class SyncTradeOrdersApiController {
                 uid,
                 future::complete);
         log.info("placing orderId {}", orderId);
+
+        // TODO can be inserted after events - insert into cookie-based queue first?
+        gatewayState.getOrCreateUserProfile(uid).addNewOrder(orderId, placeOrder);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< PLACE ORDER {}", orderCommand);

@@ -5,6 +5,7 @@ import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.openpredict.exchange.core.ExchangeCore;
 import org.openpredict.exchange.rest.model.internal.GatewayAssetSpec;
 import org.openpredict.exchange.rest.model.internal.GatewaySymbolSpec;
+import org.openpredict.exchange.rest.model.internal.GatewayUserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,8 @@ public class GatewayState {
 
     private final Map<String, GatewayAssetSpec> assetsByCode = new ConcurrentHashMap<>();
     private final Map<Integer, GatewayAssetSpec> assetsById = new ConcurrentHashMap<>();
+
+    private final Map<Long, GatewayUserProfile> userProfiles = new ConcurrentHashMap<>();
 
     @Autowired
     private ExchangeCore exchangeCore;
@@ -78,6 +81,10 @@ public class GatewayState {
         }
 
         return newSpec;
+    }
+
+    public GatewayUserProfile getOrCreateUserProfile(long uid) {
+        return userProfiles.computeIfAbsent(uid, k -> new GatewayUserProfile());
     }
 
     @PostConstruct
