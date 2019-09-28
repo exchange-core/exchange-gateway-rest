@@ -1,9 +1,6 @@
 package org.openpredict.exchange.rest.model.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.openpredict.exchange.beans.OrderAction;
 import org.openpredict.exchange.beans.OrderType;
 import org.openpredict.exchange.rest.model.api.OrderState;
@@ -15,11 +12,12 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @Getter
+@ToString
 public class GatewayOrder {
 
     private final long orderId;
 
-    private final long userCookie;
+    private final int userCookie;
 
     private final BigDecimal price;
     private final long size;

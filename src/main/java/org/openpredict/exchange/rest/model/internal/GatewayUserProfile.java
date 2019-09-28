@@ -1,5 +1,7 @@
 package org.openpredict.exchange.rest.model.internal;
 
+import lombok.extern.slf4j.Slf4j;
+import org.openpredict.exchange.beans.Order;
 import org.openpredict.exchange.rest.commands.RestApiPlaceOrder;
 import org.openpredict.exchange.rest.events.MatchingRole;
 import org.openpredict.exchange.rest.model.api.OrderState;
@@ -7,11 +9,14 @@ import org.openpredict.exchange.rest.model.api.OrderState;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 /**
  * Thread safe
  */
+@Slf4j
 public class GatewayUserProfile {
 
     // orders in status NEW/ACTIVE status
@@ -19,6 +24,14 @@ public class GatewayUserProfile {
 
     // orders in other statuses
     private final Map<Long, GatewayOrder> ordersHistory = new HashMap<>();
+
+    public synchronized Map<Long, Integer> findUserCookies(final Stream<Order> activeOrders) {
+        return activeOrders
+                .map(Order::getOrderId)
+                .collect(Collectors.toMap(
+                        orderId -> orderId,
+                        orderId -> openOrders.get(orderId).getUserCookie()));
+    }
 
     public synchronized void addNewOrder(long orderId, RestApiPlaceOrder restApiPlaceOrder) {
 
@@ -34,7 +47,6 @@ public class GatewayUserProfile {
                 .build();
 
         openOrders.put(orderId, order);
-
     }
 
     public synchronized void activateOrder(long orderId) {

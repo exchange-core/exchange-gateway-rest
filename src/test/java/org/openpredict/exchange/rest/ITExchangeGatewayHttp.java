@@ -18,6 +18,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -143,6 +145,7 @@ public class ITExchangeGatewayHttp {
                 .build();
 
         assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected));
+
         {
             final RestApiUserState userState = testService.getUserState(uid);
             assertThat(userState.accounts.size(), is(1));
@@ -159,9 +162,9 @@ public class ITExchangeGatewayHttp {
             assertThat(order.getPrice(), is(price));
             assertThat(order.getSize(), is(size));
             assertThat(order.getState(), is(OrderState.ACTIVE));
-            // TODO assertThat(order.getUserCookie(), is(userCookie));
+            assertThat(order.getUserCookie(), is(userCookie));
             assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
-            // TODO assertThat(order.getDeals(), is());
+            assertTrue(order.getDeals().isEmpty());
         }
 
         // move order
@@ -176,6 +179,84 @@ public class ITExchangeGatewayHttp {
         testService.cancelOrder(orderId, "XBTC_USDT", uid);
 
         assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.emptyList()).withBidVolumes(Collections.emptyList())));
+
+    }
+
+    @Test
+    @DirtiesContext
+    public void shouldTradeLimitOrder() throws Exception {
+        int uid1 = 1001;
+        int uid2 = 1002;
+        testService.createUser(uid1);
+        testService.createUser(uid2);
+
+        testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
+        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+
+        final BigDecimal initialBalanceXbtc1 = new BigDecimal("0.31047729");
+        testService.adjustUserBalance(uid1, "XBTC", initialBalanceXbtc1, 927910L);
+
+        final BigDecimal initialBalanceUsdt2 = new BigDecimal("3627.29");
+        testService.adjustUserBalance(uid2, "USDT", initialBalanceUsdt2, 713223L);
+
+        final BigDecimal takerFee = new BigDecimal("0.08");
+        final BigDecimal makerFee = new BigDecimal("0.03");
+
+        testService.addSymbol(new RestApiAddSymbol(
+                SYMBOL_XBTC_USDT,
+                3199,
+                SymbolType.CURRENCY_EXCHANGE_PAIR,
+                "XBTC",
+                "USDT",
+                new BigDecimal("0.1"), // lot size
+                new BigDecimal("0.01"), // step size
+                takerFee,
+                makerFee,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                new BigDecimal("50000"),
+                new BigDecimal("1000")));
+
+        // place GTC ASK order 1
+        BigDecimal price1 = new BigDecimal("829.33");
+        long size1 = 3;
+
+        int userCookie1 = 123;
+        long orderId1 = testService.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
+
+
+        // sumbmit IoC BID order 2
+        BigDecimal price2 = new BigDecimal("829.41");
+        long size2 = 4; // 1 lot will be rejected
+
+        int userCookie2 = 123; // other user can use the same cookie
+        long orderId2 = testService.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
+
+        RestApiOrderBook orderBook = testService.getOrderBook(SYMBOL_XBTC_USDT);
+        log.debug("Final order book: {}", orderBook);
+
+        {
+            final RestApiUserState userState = testService.getUserState(uid1);
+            assertThat(userState.accounts.size(), is(2));
+            Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
+            // 0.31047729 - (3 * 0.1)
+            assertThat(accounts.get("XBTC").currency, is(new BigDecimal("0.01047729")));
+            // 0 + (829.33 - 0.03) * 3
+            assertThat(accounts.get("USDT").currency, is(price1.subtract(makerFee).multiply(BigDecimal.valueOf(size1))));
+
+            assertThat(userState.activeOrders.size(), is(0));
+        }
+        {
+            final RestApiUserState userState = testService.getUserState(uid2);
+            assertThat(userState.accounts.size(), is(2));
+            Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
+            // 0 + (3 * 0.1)
+            assertThat(accounts.get("XBTC").currency, is(new BigDecimal("0.3")));
+            // 3627.29 - (829.33 - 0.07) * 3
+            assertThat(accounts.get("USDT").currency, is(initialBalanceUsdt2.subtract(price2.subtract(takerFee).multiply(BigDecimal.valueOf(size1)))));
+
+            assertThat(userState.activeOrders.size(), is(0));
+        }
 
     }
 }

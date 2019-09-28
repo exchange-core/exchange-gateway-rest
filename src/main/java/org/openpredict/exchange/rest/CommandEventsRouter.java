@@ -7,17 +7,18 @@ import org.openpredict.exchange.beans.cmd.OrderCommand;
 import org.openpredict.exchange.rest.events.*;
 import org.openpredict.exchange.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import org.openpredict.exchange.rest.events.admin.UserCreatedAdminEvent;
+import org.openpredict.exchange.rest.model.internal.GatewayUserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.ObjLongConsumer;
 
 
 @Service
 @Slf4j
-public class CommandEventsRouter implements BiConsumer<Long, OrderCommand> {
+public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
     @Autowired
     private GatewayState gatewayState;
@@ -31,8 +32,10 @@ public class CommandEventsRouter implements BiConsumer<Long, OrderCommand> {
      * @param cmd command placeholder
      */
     @Override
-    public void accept(Long seq, OrderCommand cmd) {
+    public void accept(OrderCommand cmd, long seq) {
         log.debug("seq={} EVENT CMD: {}", seq, cmd);
+
+//        processData(seq, cmd);
 
 //        final CommandResultCode resultCode = cmd.resultCode;
 //        final int ticket = cmd.userCookie;
@@ -56,31 +59,43 @@ public class CommandEventsRouter implements BiConsumer<Long, OrderCommand> {
 //        resp.json(response).done();
 //
 //
-//        cmd.processMatcherEvents(evt -> {
-//            log.debug("INTERNAL EVENT: " + evt);
-//        });
+        cmd.processMatcherEvents(evt -> {
+            log.debug("INTERNAL EVENT: " + evt);
+
+            if (evt.eventType == MatcherEventType.REJECTION) {
+                GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+                profile.rejectOrder(evt.activeOrderId);
+
+            } else if (evt.eventType == MatcherEventType.CANCEL) {
+                GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+                profile.cancelOrder(evt.activeOrderId);
+            }
+
+
+        });
 
     }
 
-    private Object processData(OrderCommand cmd) {
+    private void processData(long seq, OrderCommand cmd) {
         switch (cmd.command) {
 
             case PLACE_ORDER:
             case MOVE_ORDER:
             case CANCEL_ORDER:
-                return handleOrderCommand(cmd);
+                handleOrderCommand(cmd);
+                break;
 
             case ORDER_BOOK_REQUEST:
-                return handleOrderBookCommand(cmd);
+                handleOrderBookCommand(cmd);
+                break;
 
             case BALANCE_ADJUSTMENT:
-                return balanceAdjustment(cmd);
+                balanceAdjustment(cmd);
+                break;
 
             case ADD_USER:
-                return handleAddUser(cmd);
-
-            default:
-                return null;
+                handleAddUser(cmd);
+                break;
         }
     }
 

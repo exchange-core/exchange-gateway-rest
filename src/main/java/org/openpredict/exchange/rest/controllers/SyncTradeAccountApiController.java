@@ -2,6 +2,7 @@ package org.openpredict.exchange.rest.controllers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.primitive.IntLongHashMap;
+import org.openpredict.exchange.beans.Order;
 import org.openpredict.exchange.beans.OrderType;
 import org.openpredict.exchange.beans.api.reports.SingleUserReportQuery;
 import org.openpredict.exchange.beans.api.reports.SingleUserReportResult;
@@ -26,11 +27,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @RestController
@@ -55,6 +56,10 @@ public class SyncTradeAccountApiController {
 
             final List<RestApiOrder> activeOrders = new ArrayList<>();
 
+            Stream<Order> ordersStream = reportResult.getOrders().stream().flatMap(Collection::stream);
+
+            final Map<Long, Integer> userCookies = gatewayState.getOrCreateUserProfile(uid).findUserCookies(ordersStream);
+
             reportResult.getOrders().forEachKeyValue((symbolId, ordersList) -> {
 
                 final GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(symbolId);
@@ -68,7 +73,7 @@ public class SyncTradeAccountApiController {
                         .orderType(OrderType.GTC)
                         .symbol(symbolSpec.symbolCode)
                         .deals(Collections.emptyList())
-                        //  TODO   .userCookie(coreOrder.userCookie)
+                        .userCookie(userCookies.get(coreOrder.orderId))
                         .build()));
             });
 
