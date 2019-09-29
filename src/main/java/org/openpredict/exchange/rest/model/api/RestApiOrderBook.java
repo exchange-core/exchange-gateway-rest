@@ -2,6 +2,7 @@ package org.openpredict.exchange.rest.model.api;
 
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -40,6 +41,11 @@ public final class RestApiOrderBook {
         this.askVolumes = askVolumes;
         this.bidPrices = bidPrices;
         this.bidVolumes = bidVolumes;
+    }
+
+    @JsonIgnore
+    public boolean isEmpty() {
+        return askPrices.isEmpty() && askVolumes.isEmpty() && bidPrices.isEmpty() && bidVolumes.isEmpty();
     }
 
     @Override
