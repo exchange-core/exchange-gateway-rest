@@ -24,7 +24,7 @@
     <logger name="org.springframework.integration.handler.LoggingHandler" level="DEBUG"/>
 
 
-    <logger name="org.openpredict" level="DEBUG"/>
+    <logger name="exchange.core2" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="STDOUT"/>
