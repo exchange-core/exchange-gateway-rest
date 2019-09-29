@@ -17,7 +17,7 @@ package exchange.core2.rest.model.internal;
 
 import exchange.core2.core.common.OrderAction;
 import exchange.core2.core.common.OrderType;
-import exchange.core2.rest.model.api.OrderState;
+import exchange.core2.rest.model.api.GatewayOrderState;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -39,6 +39,8 @@ public class GatewayOrder {
     private final OrderAction action;
     private final OrderType orderType;
 
+    private final String symbol;
+
     // mutable fields
 
     private final List<GatewayDeal> deals = new ArrayList<>();
@@ -47,6 +49,6 @@ public class GatewayOrder {
     private long filled;
 
     @Setter
-    private OrderState state;
+    private GatewayOrderState state;
 
 }

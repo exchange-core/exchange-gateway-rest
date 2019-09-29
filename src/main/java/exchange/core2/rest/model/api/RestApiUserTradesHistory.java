@@ -15,11 +15,27 @@
  */
 package exchange.core2.rest.model.api;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
+import lombok.Getter;
 
-public enum DealParty {
+import java.util.List;
 
-    MAKER,
-    TAKER;
+@Getter
+public final class RestApiUserTradesHistory {
+
+    public final long uid;
+    public final List<RestApiOrder> orders;
+
+    @JsonCreator
+    @Builder
+    public RestApiUserTradesHistory(
+            @JsonProperty("uid") long uid,
+            @JsonProperty("activeOrders") List<RestApiOrder> activeOrders) {
+
+        this.uid = uid;
+        this.orders = activeOrders;
+    }
 
 }

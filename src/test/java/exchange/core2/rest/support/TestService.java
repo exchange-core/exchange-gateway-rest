@@ -14,6 +14,7 @@ import exchange.core2.rest.commands.admin.RestApiAsset;
 import exchange.core2.rest.events.RestGenericResponse;
 import exchange.core2.rest.model.api.RestApiOrderBook;
 import exchange.core2.rest.model.api.RestApiUserState;
+import exchange.core2.rest.model.api.RestApiUserTradesHistory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -273,5 +274,30 @@ public class TestService extends TestSupport {
 
         return x.getData();
     }
+
+
+    public RestApiUserTradesHistory getUserTradesHistory(long uid) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/users/%d/history", uid);
+
+        MvcResult result = mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+                .andExpect(jsonPath("$.data.uid", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+//                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+
+        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
+        TypeReference<RestGenericResponse<RestApiUserTradesHistory>> typeReference = new TypeReference<RestGenericResponse<RestApiUserTradesHistory>>() {
+        };
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestGenericResponse<RestApiUserTradesHistory> response = objectMapper.readValue(contentAsString, typeReference);
+        return response.getData();
+    }
+
 
 }

@@ -15,16 +15,26 @@
  */
 package exchange.core2.rest.model.api;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
+import lombok.Getter;
 
-@AllArgsConstructor
-public enum OrderState {
+import java.util.List;
 
-    NEW,
-//    PENDING,
-    ACTIVE, // new or partiallyFiled
-    FILLED, // filled
-    CANCELLED, // can be partially filled before cancelled
-    REJECTED // can be partially filled before rejected
+@Getter
+public class RestApiAccountTradeHistory {
 
+    public final long uid;
+    public final List<RestApiOrder> orders;
+
+    @JsonCreator
+    @Builder
+    public RestApiAccountTradeHistory(
+            @JsonProperty("uid") long uid,
+            @JsonProperty("orders") List<RestApiOrder> orders) {
+
+        this.uid = uid;
+        this.orders = orders;
+    }
 }

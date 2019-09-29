@@ -35,7 +35,7 @@ public final class RestApiOrder {
     private final long size;
     private final long filled;
 
-    private final OrderState state;
+    private final GatewayOrderState state;
 
     private final int userCookie;
 
@@ -56,7 +56,7 @@ public final class RestApiOrder {
             @JsonProperty("size") long size,
             @JsonProperty("filled") long filled,
             @JsonProperty("userCookie") int userCookie,
-            @JsonProperty("state") OrderState state,
+            @JsonProperty("state") GatewayOrderState state,
             @JsonProperty("action") OrderAction action,
             @JsonProperty("orderType") OrderType orderType,
             @JsonProperty("symbol") String symbol,

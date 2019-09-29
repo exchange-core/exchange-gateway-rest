@@ -5,6 +5,7 @@ import exchange.core2.core.common.OrderType;
 import exchange.core2.core.common.SymbolType;
 import exchange.core2.rest.commands.admin.RestApiAddSymbol;
 import exchange.core2.rest.commands.admin.RestApiAsset;
+import exchange.core2.rest.events.MatchingRole;
 import exchange.core2.rest.model.api.*;
 import exchange.core2.rest.support.TestService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -95,7 +97,7 @@ public class ITExchangeGatewayHttp {
     @Test
     @DirtiesContext
     public void shouldPlaceMoveCancelLimitOrder() throws Exception {
-        int uid = 1001;
+        final int uid = 1001;
         testService.createUser(uid);
         testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
         testService.addAsset(new RestApiAsset("USDT", 3412, 2));
@@ -131,11 +133,11 @@ public class ITExchangeGatewayHttp {
 
 
         // place order
-        BigDecimal price = new BigDecimal("829.33");
-        long size = 3;
+        final BigDecimal price = new BigDecimal("829.33");
+        final long size = 3;
 
-        int userCookie = 4124;
-        long orderId = testService.placeOrder(SYMBOL_XBTC_USDT, uid, price, size, userCookie, OrderAction.BID, OrderType.GTC);
+        final int userCookie = 4124;
+        final long orderId = testService.placeOrder(SYMBOL_XBTC_USDT, uid, price, size, userCookie, OrderAction.BID, OrderType.GTC);
 
         RestApiOrderBook expected = RestApiOrderBook.builder()
                 .symbol(SYMBOL_XBTC_USDT)
@@ -162,7 +164,7 @@ public class ITExchangeGatewayHttp {
             assertThat(order.getOrderType(), is(OrderType.GTC));
             assertThat(order.getPrice(), is(price));
             assertThat(order.getSize(), is(size));
-            assertThat(order.getState(), is(OrderState.ACTIVE));
+            assertThat(order.getState(), is(GatewayOrderState.ACTIVE));
             assertThat(order.getUserCookie(), is(userCookie));
             assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
             assertTrue(order.getDeals().isEmpty());
@@ -186,8 +188,8 @@ public class ITExchangeGatewayHttp {
     @Test
     @DirtiesContext
     public void shouldTradeLimitOrder() throws Exception {
-        int uid1 = 1001;
-        int uid2 = 1002;
+        final int uid1 = 1001;
+        final int uid2 = 1002;
         testService.createUser(uid1);
         testService.createUser(uid2);
 
@@ -221,13 +223,13 @@ public class ITExchangeGatewayHttp {
                 new BigDecimal("1000")));
 
         // place GTC ASK order 1
-        BigDecimal price1 = new BigDecimal("829.33");
-        long size1 = 3;
+        final BigDecimal price1 = new BigDecimal("829.33");
+        final long size1 = 3;
 
-        int userCookie1 = 123;
-        long orderId1 = testService.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
+        final int userCookie1 = 123;
+        final long orderId1 = testService.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
 
-        BigDecimal expectedBalanceXbtc1 = initialBalanceXbtc1.subtract(lotSize.multiply(BigDecimal.valueOf(size1)));
+        final BigDecimal expectedBalanceXbtc1 = initialBalanceXbtc1.subtract(lotSize.multiply(BigDecimal.valueOf(size1)));
 
         {
             final RestApiUserState userState = testService.getUserState(uid1);
@@ -244,45 +246,83 @@ public class ITExchangeGatewayHttp {
             assertThat(order.getOrderType(), is(OrderType.GTC));
             assertThat(order.getPrice(), is(price1));
             assertThat(order.getSize(), is(size1));
-            assertThat(order.getState(), is(OrderState.ACTIVE));
+            assertThat(order.getState(), is(GatewayOrderState.ACTIVE));
             assertThat(order.getUserCookie(), is(userCookie1));
             assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
             assertTrue(order.getDeals().isEmpty());
         }
 
-        // sumbmit IoC BID order 2
-        BigDecimal price2 = new BigDecimal("829.41");
-        long size2 = 4; // 1 lot will be rejected
+        // submit IoC BID order 2
+        final BigDecimal price2 = new BigDecimal("829.41");
+        final long size2 = 4; // 1 lot will be rejected
 
 
-        int userCookie2 = 123; // other user can use the same cookie
-        long orderId2 = testService.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
+        final int userCookie2 = 123; // other user can use the same cookie
+        final long orderId2 = testService.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
         assertTrue(testService.getOrderBook(SYMBOL_XBTC_USDT).isEmpty());
 
-        // check user1 state
         {
+            // check user1 state
             final RestApiUserState userState = testService.getUserState(uid1);
             assertThat(userState.accounts.size(), is(2));
-            Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
+            final Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
             // 0.31047729 - (3 * 0.1)
             assertThat(accounts.get("XBTC").balance, comparesEqualTo(expectedBalanceXbtc1));
             // 0 + (829.33 - 0.03) * 3
             assertThat(accounts.get("USDT").balance, comparesEqualTo(price1.subtract(makerFee).multiply(BigDecimal.valueOf(size1))));
 
             assertThat(userState.activeOrders.size(), is(0));
+
+            // check user1 history
+            final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid1);
+            assertThat(history.orders.size(), is(1));
+            final RestApiOrder order = history.orders.get(0);
+            assertThat(order.getOrderId(), is(orderId1));
+            assertThat(order.getPrice(), is(price1));
+            assertThat(order.getSize(), is(3L));
+            assertThat(order.getFilled(), is(3L));
+            assertThat(order.getState(), is(GatewayOrderState.COMPLETED));
+            assertThat(order.getUserCookie(), is(userCookie1));
+            assertThat(order.getAction(), is(OrderAction.ASK));
+            assertThat(order.getOrderType(), is(OrderType.GTC));
+            assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
+            final List<RestApiDeal> deals = order.getDeals();
+            assertThat(deals.size(), is(1));
+            assertThat(deals.get(0).getParty(), is(MatchingRole.MAKER));
+            assertThat(deals.get(0).getPrice(), is(price1));
+            assertThat(deals.get(0).getSize(), is(3L));
         }
 
-        // check user2 state
         {
+            // check user2 state
             final RestApiUserState userState = testService.getUserState(uid2);
             assertThat(userState.accounts.size(), is(2));
-            Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
+            final Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
             // 0 + (3 * 0.1)
             assertThat(accounts.get("XBTC").balance, comparesEqualTo(lotSize.multiply(BigDecimal.valueOf(size1))));
 
             // /// 3627.29 - (829.33 + 0.07) * 3
             assertThat(accounts.get("USDT").balance, comparesEqualTo(initialBalanceUsdt2.subtract(price1.add(takerFee).multiply(BigDecimal.valueOf(size1)))));
             assertThat(userState.activeOrders.size(), is(0));
+
+            // check user2 history
+            final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid2);
+            assertThat(history.orders.size(), is(1));
+            final RestApiOrder order = history.orders.get(0);
+            assertThat(order.getOrderId(), is(orderId2));
+            assertThat(order.getPrice(), is(price2));
+            assertThat(order.getSize(), is(4L));
+            assertThat(order.getFilled(), is(3L));
+            assertThat(order.getState(), is(GatewayOrderState.REJECTED));
+            assertThat(order.getUserCookie(), is(userCookie2));
+            assertThat(order.getAction(), is(OrderAction.BID));
+            assertThat(order.getOrderType(), is(OrderType.IOC));
+            assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
+            final List<RestApiDeal> deals = order.getDeals();
+            assertThat(deals.size(), is(1));
+            assertThat(deals.get(0).getParty(), is(MatchingRole.TAKER));
+            assertThat(deals.get(0).getPrice(), is(price1));
+            assertThat(deals.get(0).getSize(), is(3L));
         }
 
     }

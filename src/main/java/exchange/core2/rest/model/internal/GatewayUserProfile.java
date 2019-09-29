@@ -18,12 +18,14 @@ package exchange.core2.rest.model.internal;
 import exchange.core2.core.common.Order;
 import exchange.core2.rest.commands.RestApiPlaceOrder;
 import exchange.core2.rest.events.MatchingRole;
-import exchange.core2.rest.model.api.OrderState;
+import exchange.core2.rest.model.api.GatewayOrderState;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -48,7 +50,7 @@ public class GatewayUserProfile {
                         orderId -> openOrders.get(orderId).getUserCookie()));
     }
 
-    public synchronized void addNewOrder(long orderId, RestApiPlaceOrder restApiPlaceOrder) {
+    public synchronized void addNewOrder(long orderId, String symbol, RestApiPlaceOrder restApiPlaceOrder) {
 
         GatewayOrder order = GatewayOrder.builder()
                 .orderId(orderId)
@@ -58,7 +60,8 @@ public class GatewayUserProfile {
                 .orderType(restApiPlaceOrder.getOrderType())
                 .action(restApiPlaceOrder.getAction())
                 .filled(0)
-                .state(OrderState.NEW)
+                .symbol(symbol)
+                .state(GatewayOrderState.NEW)
                 .build();
 
         openOrders.put(orderId, order);
@@ -66,7 +69,7 @@ public class GatewayUserProfile {
 
     public synchronized void activateOrder(long orderId) {
         GatewayOrder gatewayOrder = openOrders.get(orderId);
-        gatewayOrder.setState(OrderState.ACTIVE);
+        gatewayOrder.setState(GatewayOrderState.ACTIVE);
     }
 
     public synchronized void tradeOrder(
@@ -78,12 +81,19 @@ public class GatewayUserProfile {
             long counterOrderId,
             long counterPartyUid) {
 
-        GatewayOrder gatewayOrder = openOrders.get(orderId);
+        final GatewayOrder gatewayOrder = openOrders.get(orderId);
 
-        gatewayOrder.setFilled(gatewayOrder.getFilled() + size);
+        if (gatewayOrder.getState() == GatewayOrderState.ACTIVE) {
+            gatewayOrder.setState(GatewayOrderState.PARTIALLY_FILLED);
+        }
 
-        if (gatewayOrder.getState() == OrderState.ACTIVE) {
-            gatewayOrder.setState(OrderState.FILLED);
+        long filled = gatewayOrder.getFilled() + size;
+        gatewayOrder.setFilled(filled);
+        if (gatewayOrder.getSize() == filled) {
+            openOrders.remove(orderId);
+            ordersHistory.put(orderId, gatewayOrder);
+            gatewayOrder.setState(GatewayOrderState.COMPLETED);
+            log.debug("MOVED order {} into history section", orderId);
         }
 
         gatewayOrder.getDeals().add(GatewayDeal.builder()
@@ -98,15 +108,20 @@ public class GatewayUserProfile {
     }
 
     public synchronized void rejectOrder(long orderId) {
-        GatewayOrder gatewayOrder = openOrders.get(orderId);
-        gatewayOrder.setState(OrderState.REJECTED);
+        GatewayOrder gatewayOrder = openOrders.remove(orderId);
         ordersHistory.put(orderId, gatewayOrder);
+        gatewayOrder.setState(GatewayOrderState.REJECTED);
+        log.debug("MOVED order {} into history section", orderId);
     }
 
     public synchronized void cancelOrder(long orderId) {
-        GatewayOrder gatewayOrder = openOrders.get(orderId);
-        gatewayOrder.setState(OrderState.CANCELLED);
+        GatewayOrder gatewayOrder = openOrders.remove(orderId);
         ordersHistory.put(orderId, gatewayOrder);
+        gatewayOrder.setState(GatewayOrderState.CANCELLED);
+        log.debug("MOVED order {} into history section", orderId);
     }
 
+    public synchronized <T> List<T> mapHistoryOrders(Function<GatewayOrder, T> mapper) {
+        return ordersHistory.values().stream().map(mapper).collect(Collectors.toList());
+    }
 }

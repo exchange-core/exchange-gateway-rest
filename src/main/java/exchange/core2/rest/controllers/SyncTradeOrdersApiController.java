@@ -25,7 +25,7 @@ import exchange.core2.rest.commands.RestApiMoveOrder;
 import exchange.core2.rest.commands.RestApiPlaceOrder;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.RestGenericResponse;
-import exchange.core2.rest.model.api.OrderState;
+import exchange.core2.rest.model.api.GatewayOrderState;
 import exchange.core2.rest.model.api.RestApiOrder;
 import exchange.core2.rest.model.api.RestApiOrderBook;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
@@ -129,7 +129,7 @@ public class SyncTradeOrdersApiController {
         log.info("placing orderId {}", orderId);
 
         // TODO can be inserted after events - insert into cookie-based queue first?
-        gatewayState.getOrCreateUserProfile(uid).addNewOrder(orderId, placeOrder);
+        gatewayState.getOrCreateUserProfile(uid).addNewOrder(orderId, symbol, placeOrder);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< PLACE ORDER {}", orderCommand);
@@ -139,7 +139,7 @@ public class SyncTradeOrdersApiController {
                 .orderId(orderCommand.orderId)
                 .size(orderCommand.size)
                 .filled(0)
-                .state(OrderState.NEW)
+                .state(GatewayOrderState.NEW)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)
                 .orderType(orderCommand.orderType)
@@ -187,7 +187,7 @@ public class SyncTradeOrdersApiController {
                 .orderId(orderCommand.orderId)
                 .size(orderCommand.size)
                 .filled(-1)
-                .state(OrderState.ACTIVE)
+                .state(GatewayOrderState.ACTIVE)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)
                 .orderType(orderCommand.orderType)
@@ -227,7 +227,7 @@ public class SyncTradeOrdersApiController {
                 .orderId(orderCommand.orderId)
                 .size(orderCommand.size)
                 .filled(-1)
-                .state(OrderState.CANCELLED)
+                .state(GatewayOrderState.CANCELLED)
                 .userCookie(orderCommand.userCookie)
                 .action(orderCommand.action)
                 .orderType(orderCommand.orderType)

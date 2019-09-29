@@ -25,10 +25,7 @@ import exchange.core2.rest.GatewayState;
 import exchange.core2.rest.commands.ApiErrorCodes;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.RestGenericResponse;
-import exchange.core2.rest.model.api.OrderState;
-import exchange.core2.rest.model.api.RestApiAccountState;
-import exchange.core2.rest.model.api.RestApiOrder;
-import exchange.core2.rest.model.api.RestApiUserState;
+import exchange.core2.rest.model.api.*;
 import exchange.core2.rest.model.internal.GatewayAssetSpec;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import lombok.extern.slf4j.Slf4j;
@@ -44,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -81,11 +79,11 @@ public class SyncTradeAccountApiController {
                         .size(coreOrder.size)
                         .filled(coreOrder.filled)
                         .price(ArithmeticHelper.fromLongPrice(coreOrder.price, symbolSpec))
-                        .state(OrderState.ACTIVE)
+                        .state(GatewayOrderState.ACTIVE)
                         .action(coreOrder.action)
                         .orderType(OrderType.GTC)
                         .symbol(symbolSpec.symbolCode)
-                        .deals(Collections.emptyList())
+                        .deals(Collections.emptyList()) // TODO add deals
                         .userCookie(userCookies.get(coreOrder.orderId))
                         .build()));
             });
@@ -113,5 +111,34 @@ public class SyncTradeAccountApiController {
         }
     }
 
+
+    @RequestMapping(value = "users/{uid}/history", method = RequestMethod.GET)
+    public ResponseEntity<RestGenericResponse> getUserTradesHistory(
+            @PathVariable Long uid) {
+        log.info("TRADES HISTORY >>> {}", uid);
+
+        return gatewayState.getUserProfile(uid).map(up ->
+                RestControllerHelper.successResponse(RestApiAccountTradeHistory.builder()
+                        .orders(up.mapHistoryOrders(coreOrder ->
+                                RestApiOrder.builder()
+                                        .orderId(coreOrder.getOrderId())
+                                        .size(coreOrder.getSize())
+                                        .filled(coreOrder.getFilled())
+                                        .price(coreOrder.getPrice())
+                                        .state(coreOrder.getState())
+                                        .action(coreOrder.getAction())
+                                        .orderType(coreOrder.getOrderType())
+                                        .symbol(coreOrder.getSymbol())
+                                        .deals(coreOrder.getDeals().stream().map(deal -> RestApiDeal.builder()
+                                                .party(deal.getMatchingRole())
+                                                .price(deal.getPrice())
+                                                .size(deal.getSize())
+                                                .build()).collect(Collectors.toList()))
+                                        .userCookie(coreOrder.getUserCookie())
+                                        .build()))
+                        .uid(uid)
+                        .build(), HttpStatus.OK))
+                .orElseGet(() -> RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_USER_404));
+    }
 
 }

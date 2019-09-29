@@ -18,15 +18,18 @@ package exchange.core2.rest.model.api;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import exchange.core2.rest.events.MatchingRole;
 import lombok.Builder;
 import lombok.Getter;
+
+import java.math.BigDecimal;
 
 @Getter
 public final class RestApiDeal {
 
-    private final String price;
-    private final String size;
-    private final DealParty party;
+    private final BigDecimal price;
+    private final long size;
+    private final MatchingRole party;
 
 
 // TODO add more fields
@@ -34,9 +37,9 @@ public final class RestApiDeal {
     @JsonCreator
     @Builder
     public RestApiDeal(
-            @JsonProperty("price") String price,
-            @JsonProperty("size") String size,
-            @JsonProperty("party") DealParty party) {
+            @JsonProperty("price") BigDecimal price,
+            @JsonProperty("size") long size,
+            @JsonProperty("party") MatchingRole party) {
 
         this.price = price;
         this.size = size;

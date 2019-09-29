@@ -18,14 +18,17 @@ package exchange.core2.rest;
 import exchange.core2.core.common.L2MarketData;
 import exchange.core2.core.common.MatcherEventType;
 import exchange.core2.core.common.cmd.OrderCommand;
+import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.*;
 import exchange.core2.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import exchange.core2.rest.events.admin.UserCreatedAdminEvent;
+import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import exchange.core2.rest.model.internal.GatewayUserProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjLongConsumer;
@@ -72,23 +75,49 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 //                .build();
 //
 //        resp.json(response).done();
-//
-//
-        cmd.processMatcherEvents(evt -> {
-            log.debug("INTERNAL EVENT: " + evt);
 
-            if (evt.eventType == MatcherEventType.REJECTION) {
-                GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+        // processing events in original order
+
+        final GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(cmd.symbol);
+
+        cmd.extractEvents().forEach(evt -> {
+            log.debug("INTERNAL EVENT: " + evt);
+            if (evt.eventType == MatcherEventType.TRADE) {
+
+                // resolve trade price
+                final BigDecimal tradePrice = ArithmeticHelper.fromLongPrice(evt.price, symbolSpec);
+
+                // update taker's profile
+                final GatewayUserProfile takerProfile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+                takerProfile.tradeOrder(
+                        evt.activeOrderId,
+                        evt.size,
+                        tradePrice,
+                        MatchingRole.TAKER,
+                        evt.timestamp,
+                        evt.matchedOrderId,
+                        evt.matchedOrderUid);
+
+                // update maker's profile
+                final GatewayUserProfile makerProfile = gatewayState.getOrCreateUserProfile(evt.matchedOrderUid);
+                makerProfile.tradeOrder(
+                        evt.matchedOrderId,
+                        evt.size,
+                        tradePrice,
+                        MatchingRole.MAKER,
+                        evt.timestamp,
+                        evt.activeOrderId,
+                        evt.activeOrderUid);
+
+            } else if (evt.eventType == MatcherEventType.REJECTION) {
+                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
                 profile.rejectOrder(evt.activeOrderId);
 
             } else if (evt.eventType == MatcherEventType.CANCEL) {
-                GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
                 profile.cancelOrder(evt.activeOrderId);
             }
-
-
         });
-
     }
 
     private void processData(long seq, OrderCommand cmd) {

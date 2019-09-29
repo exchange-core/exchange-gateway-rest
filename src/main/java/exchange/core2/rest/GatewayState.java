@@ -15,18 +15,19 @@
  */
 package exchange.core2.rest;
 
+import exchange.core2.core.ExchangeCore;
 import exchange.core2.rest.model.internal.GatewayAssetSpec;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
+import exchange.core2.rest.model.internal.GatewayUserProfile;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
-import exchange.core2.core.ExchangeCore;
-import exchange.core2.rest.model.internal.GatewayUserProfile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -96,6 +97,10 @@ public class GatewayState {
         }
 
         return newSpec;
+    }
+
+    public Optional<GatewayUserProfile> getUserProfile(long uid) {
+        return Optional.ofNullable(userProfiles.get(uid));
     }
 
     public GatewayUserProfile getOrCreateUserProfile(long uid) {
