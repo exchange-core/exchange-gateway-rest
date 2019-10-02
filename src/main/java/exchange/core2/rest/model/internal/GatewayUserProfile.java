@@ -121,6 +121,13 @@ public class GatewayUserProfile {
         log.debug("MOVED order {} into history section", orderId);
     }
 
+
+    public synchronized void updateOrderPrice(long orderId, BigDecimal newPrice) {
+        GatewayOrder gatewayOrder = openOrders.get(orderId);
+        ordersHistory.put(orderId, gatewayOrder);
+        gatewayOrder.setPrice(newPrice);
+    }
+
     public synchronized <T> List<T> mapHistoryOrders(Function<GatewayOrder, T> mapper) {
         return ordersHistory.values().stream().map(mapper).collect(Collectors.toList());
     }

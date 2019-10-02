@@ -17,13 +17,17 @@ package exchange.core2.rest;
 
 import exchange.core2.core.common.L2MarketData;
 import exchange.core2.core.common.MatcherEventType;
+import exchange.core2.core.common.MatcherTradeEvent;
+import exchange.core2.core.common.cmd.CommandResultCode;
 import exchange.core2.core.common.cmd.OrderCommand;
+import exchange.core2.core.common.cmd.OrderCommandType;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.*;
 import exchange.core2.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import exchange.core2.rest.events.admin.UserCreatedAdminEvent;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import exchange.core2.rest.model.internal.GatewayUserProfile;
+import exchange.core2.rest.model.internal.TickRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -78,9 +82,26 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         // processing events in original order
 
+        // TODO
+
+        if (cmd.command == OrderCommandType.BINARY_DATA) {
+            // ignore binary commands further
+            return;
+        }
+
         final GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(cmd.symbol);
 
-        cmd.extractEvents().forEach(evt -> {
+        if (cmd.command == OrderCommandType.MOVE_ORDER && cmd.resultCode == CommandResultCode.SUCCESS) {
+            final GatewayUserProfile userProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            final BigDecimal newPrice = ArithmeticHelper.fromLongPrice(cmd.price, symbolSpec);
+            userProfile.updateOrderPrice(cmd.orderId, newPrice);
+        }
+
+        List<MatcherTradeEvent> matcherTradeEvents = cmd.extractEvents();
+
+        List<TickRecord> ticks = new ArrayList<>();
+
+        for (MatcherTradeEvent evt : matcherTradeEvents) {
             log.debug("INTERNAL EVENT: " + evt);
             if (evt.eventType == MatcherEventType.TRADE) {
 
@@ -109,6 +130,8 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                         evt.activeOrderId,
                         evt.activeOrderUid);
 
+                ticks.add(new TickRecord(tradePrice, evt.size, evt.timestamp, evt.activeOrderAction));
+
             } else if (evt.eventType == MatcherEventType.REJECTION) {
                 final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
                 profile.rejectOrder(evt.activeOrderId);
@@ -117,7 +140,11 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                 final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
                 profile.cancelOrder(evt.activeOrderId);
             }
-        });
+        }
+
+        if (!ticks.isEmpty()) {
+            gatewayState.addTicks(symbolSpec.symbolCode, ticks);
+        }
     }
 
     private void processData(long seq, OrderCommand cmd) {

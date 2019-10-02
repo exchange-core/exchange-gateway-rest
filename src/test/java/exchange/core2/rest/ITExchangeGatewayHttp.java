@@ -174,14 +174,30 @@ public class ITExchangeGatewayHttp {
 
         testService.moveOrder(orderId, "XBTC_USDT", uid, BigDecimal.valueOf(829.29));
 
-        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.singletonList(new BigDecimal("829.29")))));
-
+        final BigDecimal newPrice = new BigDecimal("829.29");
+        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.singletonList(newPrice))));
+        assertThat(testService.getUserState(uid).activeOrders.get(0).getPrice(), is(newPrice));
 
         // cancel order
 
         testService.cancelOrder(orderId, "XBTC_USDT", uid);
 
         assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.emptyList()).withBidVolumes(Collections.emptyList())));
+        assertThat(testService.getUserState(uid).activeOrders.size(), is(0));
+
+        final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid);
+        assertThat(history.orders.size(), is(1));
+        final RestApiOrder order = history.orders.get(0);
+        assertThat(order.getOrderId(), is(orderId));
+        assertThat(order.getPrice(), is(newPrice));
+        assertThat(order.getSize(), is(3L));
+        assertThat(order.getFilled(), is(0L));
+        assertThat(order.getState(), is(GatewayOrderState.CANCELLED));
+        assertThat(order.getUserCookie(), is(userCookie));
+        assertThat(order.getAction(), is(OrderAction.BID));
+        assertThat(order.getOrderType(), is(OrderType.GTC));
+        assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
+        assertThat(order.getDeals().size(), is(0));
 
     }
 

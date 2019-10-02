@@ -16,9 +16,8 @@
 package exchange.core2.rest;
 
 import exchange.core2.core.ExchangeCore;
-import exchange.core2.rest.model.internal.GatewayAssetSpec;
-import exchange.core2.rest.model.internal.GatewaySymbolSpec;
-import exchange.core2.rest.model.internal.GatewayUserProfile;
+import exchange.core2.rest.model.api.TimeFrame;
+import exchange.core2.rest.model.internal.*;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.collections.impl.map.mutable.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +47,8 @@ public class GatewayState {
     private final Map<Integer, GatewayAssetSpec> assetsById = new ConcurrentHashMap<>();
 
     private final Map<Long, GatewayUserProfile> userProfiles = new ConcurrentHashMap<>();
+
+    private final Map<String, ChartData> charts = new ConcurrentHashMap<>();
 
     @Autowired
     private ExchangeCore exchangeCore;
@@ -105,6 +107,14 @@ public class GatewayState {
 
     public GatewayUserProfile getOrCreateUserProfile(long uid) {
         return userProfiles.computeIfAbsent(uid, k -> new GatewayUserProfile());
+    }
+
+    public void addTicks(String symbol, List<TickRecord> records) {
+        charts.compute(symbol, (s, chart) -> chart == null ? new ChartData() : chart).addTicks(records);
+    }
+
+    public Optional<List<GatewayBarStatic>> getBars(String symbolCode, int barsNum, TimeFrame timeFrame) {
+        return Optional.ofNullable(charts.get(symbolCode)).map(chartData -> chartData.getBarsData(barsNum, timeFrame));
     }
 
     @PostConstruct

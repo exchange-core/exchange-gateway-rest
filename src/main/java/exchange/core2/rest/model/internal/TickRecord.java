@@ -16,41 +16,20 @@
 package exchange.core2.rest.model.internal;
 
 import exchange.core2.core.common.OrderAction;
-import exchange.core2.core.common.OrderType;
-import exchange.core2.rest.model.api.GatewayOrderState;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 
 @AllArgsConstructor
-@Builder
-@Getter
 @ToString
-public class GatewayOrder {
+@Getter
+public class TickRecord {
 
-    private final long orderId;
-
-    private final int userCookie;
-
-    private final long size;
-    private final OrderAction action;
-    private final OrderType orderType;
-
-    private final String symbol;
-
-    // mutable fields
-
-    private final List<GatewayDeal> deals = new ArrayList<>();
-
-    @Setter
     private BigDecimal price;
-
-    @Setter
-    private long filled;
-
-    @Setter
-    private GatewayOrderState state;
+    private long size;
+    private long timestamp;
+    private OrderAction action;
 
 }
