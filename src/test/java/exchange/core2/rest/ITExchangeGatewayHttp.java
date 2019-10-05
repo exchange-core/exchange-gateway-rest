@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.comparesEqualTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertTrue;
 
@@ -266,6 +267,10 @@ public class ITExchangeGatewayHttp {
             assertThat(order.getUserCookie(), is(userCookie1));
             assertThat(order.getSymbol(), is(SYMBOL_XBTC_USDT));
             assertTrue(order.getDeals().isEmpty());
+
+            // no bars yet
+            List<RestApiBar> bars = testService.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
+            assertTrue(bars.isEmpty());
         }
 
         // submit IoC BID order 2
@@ -339,6 +344,20 @@ public class ITExchangeGatewayHttp {
             assertThat(deals.get(0).getParty(), is(MatchingRole.TAKER));
             assertThat(deals.get(0).getPrice(), is(price1));
             assertThat(deals.get(0).getSize(), is(3L));
+        }
+
+        {
+            // no bars yet
+            List<RestApiBar> bars = testService.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
+            assertThat(bars.size(), is(1));
+            RestApiBar bar = bars.get(0);
+            log.debug("Bar: {}", bar);
+            assertThat(bar.getOpen(), is(price1));
+            assertThat(bar.getHigh(), is(price1));
+            assertThat(bar.getLow(), is(price1));
+            assertThat(bar.getClose(), is(price1));
+            assertThat(bar.getVolume(), is(3L));
+            assertThat(bar.getTimestamp(), greaterThan(0L));
         }
 
     }

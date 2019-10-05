@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package exchange.core2.rest.model.internal;
+package exchange.core2.rest.model.api;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @ToString
-@AllArgsConstructor
-@Builder
 @Getter
-public class GatewayBarStatic {
+public class RestApiBar {
 
     private final BigDecimal open;
     private final BigDecimal high;
@@ -37,4 +35,23 @@ public class GatewayBarStatic {
     //    private final int index;
     private final long timestamp;
 
+    @JsonCreator
+    @Builder
+    public RestApiBar(
+            @JsonProperty("open") BigDecimal open,
+            @JsonProperty("high") BigDecimal high,
+            @JsonProperty("low") BigDecimal low,
+            @JsonProperty("close") BigDecimal close,
+            @JsonProperty("volume") long volume,
+//            @JsonProperty("index") int index,
+            @JsonProperty("timestamp") long timestamp) {
+
+        this.open = open;
+        this.high = high;
+        this.low = low;
+        this.close = close;
+        this.volume = volume;
+//        this.index = index;
+        this.timestamp = timestamp;
+    }
 }

@@ -17,12 +17,14 @@ package exchange.core2.rest.model.internal;
 
 import exchange.core2.rest.model.api.TimeFrame;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
 @NoArgsConstructor
+@Slf4j
 public class ChartData {
 
     private final BarsData bars = new BarsData(TimeFrame.M1);
@@ -43,11 +45,18 @@ public class ChartData {
      */
     public List<GatewayBarStatic> getBarsData(int barsNum, TimeFrame timeFrame) {
 
+        // TODO can return older result for second requester
         if (!ticksQueue.isEmpty() && !flushingTicks) {
+
+            log.debug("Flushing ticks...");
+
             // flush ticks queue if needed
             flushingTicks = true;
             synchronized (bars) {
-                ticksQueue.forEach(tick -> bars.addTick(tick.getPrice(), tick.getSize(), tick.getTimestamp()));
+                ticksQueue.forEach(tick -> {
+                    log.debug("Tick: {}", tick);
+                    bars.addTick(tick.getPrice(), tick.getSize(), tick.getTimestamp());
+                });
             }
             flushingTicks = false;
         }

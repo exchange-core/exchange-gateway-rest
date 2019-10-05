@@ -12,9 +12,8 @@ import exchange.core2.rest.commands.admin.RestApiAddSymbol;
 import exchange.core2.rest.commands.admin.RestApiAddUser;
 import exchange.core2.rest.commands.admin.RestApiAsset;
 import exchange.core2.rest.events.RestGenericResponse;
-import exchange.core2.rest.model.api.RestApiOrderBook;
-import exchange.core2.rest.model.api.RestApiUserState;
-import exchange.core2.rest.model.api.RestApiUserTradesHistory;
+import exchange.core2.rest.model.api.*;
+import exchange.core2.rest.model.internal.BarsData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -22,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -297,6 +297,32 @@ public class TestService extends TestSupport {
         ObjectMapper objectMapper = new ObjectMapper();
         RestGenericResponse<RestApiUserTradesHistory> response = objectMapper.readValue(contentAsString, typeReference);
         return response.getData();
+    }
+
+    public List<RestApiBar> getBars(String symbolCode, TimeFrame timeFrame, int barsNum) throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + String.format("/symbols/%s/bars/%s/", symbolCode, timeFrame);
+
+        MvcResult result = mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+//                .andExpect(jsonPath("$.data.uid", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+//                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        log.debug("contentAsString=" + contentAsString);
+
+        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
+        TypeReference<RestGenericResponse<List<RestApiBar>>> typeReference = new TypeReference<RestGenericResponse<List<RestApiBar>>>() {
+        };
+        ObjectMapper objectMapper = new ObjectMapper();
+        RestGenericResponse<List<RestApiBar>> x = objectMapper.readValue(contentAsString, typeReference);
+
+        log.debug("re=" + x);
+
+        return x.getData();
     }
 
 

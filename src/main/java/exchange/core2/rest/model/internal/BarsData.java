@@ -16,15 +16,17 @@
 package exchange.core2.rest.model.internal;
 
 import exchange.core2.rest.model.api.TimeFrame;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Not thread safe
  */
+@Slf4j
 public class BarsData {
 
     private final TimeFrame timeFrame;
@@ -38,7 +40,7 @@ public class BarsData {
     private BigDecimal low;
     private BigDecimal close;
 
-    private Instant startTimestamp;
+    private long startTimestamp;
     private long endTimestamp;
 
 
@@ -48,6 +50,7 @@ public class BarsData {
 
     public void addTick(BigDecimal price, long size, long timestamp) {
 
+        log.debug("{} < {}", timestamp, endTimestamp);
         if (timestamp < endTimestamp) {
             // just update values
 
@@ -63,12 +66,16 @@ public class BarsData {
         } else {
 
             // time to close last bar and create a new one
-            if (size > 0) {
+            if (volume > 0) {
                 bars.add(new GatewayBarStatic(open, high, low, close, volume, startTimestamp));
             }
 
-            startTimestamp = Instant.ofEpochSecond(timestamp).truncatedTo(timeFrame.getTruncateUnit());
-            endTimestamp = timestamp + timeFrame.getDuration().toMillis();
+            // todo implement correct rounding
+            Duration duration = timeFrame.getDuration();
+            long dur = duration.getSeconds() * 1000;
+            startTimestamp = (timestamp / dur) * dur;
+
+            endTimestamp = startTimestamp + timeFrame.getDuration().toMillis();
 
             open = price;
             high = price;
@@ -85,6 +92,12 @@ public class BarsData {
         for (int i = startFrom; i < size; i++) {
             result.add(bars.get(i));
         }
+
+        // add last bar
+        if (volume > 0) {
+            result.add(new GatewayBarStatic(open, high, low, close, volume, startTimestamp));
+        }
+
         return result;
     }
 

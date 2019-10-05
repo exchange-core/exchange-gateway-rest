@@ -64,6 +64,7 @@ public class GatewayState {
     public boolean registerNewSymbol(GatewaySymbolSpec spec) {
         if (symbolsById.putIfAbsent(spec.symbolId, spec) == null) {
             symbolsByCode.put(spec.symbolCode, spec);
+            charts.put(spec.symbolCode, new ChartData());
             return true;
         }
         return false;

@@ -18,7 +18,9 @@ package exchange.core2.rest.controllers;
 import exchange.core2.rest.GatewayState;
 import exchange.core2.rest.commands.ApiErrorCodes;
 import exchange.core2.rest.events.RestGenericResponse;
+import exchange.core2.rest.model.api.RestApiBar;
 import exchange.core2.rest.model.api.TimeFrame;
+import exchange.core2.rest.model.internal.GatewayBarStatic;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -28,6 +30,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -41,10 +45,20 @@ public class SyncTradeChartsApiController {
     public ResponseEntity<RestGenericResponse> getBars(
             @PathVariable String symbol,
             @PathVariable TimeFrame timeFrame) {
-        log.info("GET CHARTS >>> {} - {}", symbol, timeFrame);
+        log.info("GET BARS >>> {} - {}", symbol, timeFrame);
 
         return gatewayState.getBars(symbol, 100, timeFrame)
-                .map(bars -> RestControllerHelper.successResponse(bars, HttpStatus.OK))
+                .map(bars -> RestControllerHelper.successResponse(
+                        bars.stream()
+                                .map((GatewayBarStatic bar) -> new RestApiBar(
+                                        bar.getOpen(),
+                                        bar.getHigh(),
+                                        bar.getLow(),
+                                        bar.getClose(),
+                                        bar.getVolume(),
+                                        bar.getTimestamp()))
+                                .collect(Collectors.toList()),
+                        HttpStatus.OK))
                 .orElseGet(() -> RestControllerHelper.errorResponse(ApiErrorCodes.UNKNOWN_SYMBOL_404));
     }
 
