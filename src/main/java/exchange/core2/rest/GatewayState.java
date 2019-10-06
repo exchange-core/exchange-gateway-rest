@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 // TODO separate interfaces for admin and user
@@ -68,6 +70,20 @@ public class GatewayState {
             return true;
         }
         return false;
+    }
+
+    public <T> List<T> getActiveAssets(Function<GatewayAssetSpec, T> mapper) {
+        return assetsById.values().stream()
+                .filter(a -> a.active)
+                .map(mapper)
+                .collect(Collectors.toList());
+    }
+
+    public <T> List<T> getActiveSymbols(Function<GatewaySymbolSpec, T> mapper) {
+        return symbolsById.values().stream()
+                .filter(s -> s.status == GatewaySymbolSpec.GatewaySymbolLifecycle.ACTIVE)
+                .map(mapper)
+                .collect(Collectors.toList());
     }
 
     public boolean registerNewAsset(GatewayAssetSpec spec) {
