@@ -4,7 +4,7 @@ import exchange.core2.core.common.OrderAction;
 import exchange.core2.core.common.OrderType;
 import exchange.core2.core.common.SymbolType;
 import exchange.core2.rest.commands.admin.RestApiAddSymbol;
-import exchange.core2.rest.commands.admin.RestApiAsset;
+import exchange.core2.rest.commands.admin.RestApiAdminAsset;
 import exchange.core2.rest.events.MatchingRole;
 import exchange.core2.rest.model.api.*;
 import exchange.core2.rest.support.TestService;
@@ -45,7 +45,7 @@ public class ITExchangeGatewayHttp {
     public static final String SYMBOL_XBTC_USDT = "XBTC_USDT";
 
     @Autowired
-    private TestService testService;
+    private TestService gatewayTestClient;
 
     @Test
     @DirtiesContext
@@ -55,17 +55,17 @@ public class ITExchangeGatewayHttp {
     @Test
     @DirtiesContext
     public void shouldAddNewAsset() throws Exception {
-        testService.addAsset(new RestApiAsset("XBTC", 123, 8));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("XBTC", 123, 8));
     }
 
     @Test
     @DirtiesContext
     public void shouldAddNewSymbol() throws Exception {
 
-        testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
-        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("XBTC", 9123, 8));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("USDT", 3412, 2));
 
-        testService.addSymbol(new RestApiAddSymbol(
+        gatewayTestClient.addSymbol(new RestApiAddSymbol(
                 "XBTC_USDT",
                 3199,
                 SymbolType.CURRENCY_EXCHANGE_PAIR,
@@ -84,30 +84,30 @@ public class ITExchangeGatewayHttp {
     @Test
     @DirtiesContext
     public void shouldCreateUser() throws Exception {
-        testService.createUser(123);
+        gatewayTestClient.createUser(123);
     }
 
     @Test
     @DirtiesContext
     public void shouldAdjustUserBalance() throws Exception {
-        testService.createUser(7332);
-        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
-        testService.adjustUserBalance(7332, "USDT", new BigDecimal("192.44"), 59282713223L);
+        gatewayTestClient.createUser(7332);
+        gatewayTestClient.addAsset(new RestApiAdminAsset("USDT", 3412, 2));
+        gatewayTestClient.adjustUserBalance(7332, "USDT", new BigDecimal("192.44"), 59282713223L);
     }
 
     @Test
     @DirtiesContext
     public void shouldPlaceMoveCancelLimitOrder() throws Exception {
         final int uid = 1001;
-        testService.createUser(uid);
-        testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
-        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+        gatewayTestClient.createUser(uid);
+        gatewayTestClient.addAsset(new RestApiAdminAsset("XBTC", 9123, 8));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("USDT", 3412, 2));
 
         final BigDecimal initialBalance = new BigDecimal("2692.44");
-        testService.adjustUserBalance(uid, "USDT", initialBalance, 713223L);
+        gatewayTestClient.adjustUserBalance(uid, "USDT", initialBalance, 713223L);
 
         {
-            final RestApiUserState userState = testService.getUserState(uid);
+            final RestApiUserState userState = gatewayTestClient.getUserState(uid);
             assertThat(userState.accounts.size(), is(1));
             assertThat(userState.accounts.get(0).currency, is("USDT"));
             assertThat(userState.accounts.get(0).balance, is(initialBalance));
@@ -117,7 +117,7 @@ public class ITExchangeGatewayHttp {
         final BigDecimal takerFee = new BigDecimal("0.08");
         final BigDecimal makerFee = new BigDecimal("0.03");
 
-        testService.addSymbol(new RestApiAddSymbol(
+        gatewayTestClient.addSymbol(new RestApiAddSymbol(
                 SYMBOL_XBTC_USDT,
                 3199,
                 SymbolType.CURRENCY_EXCHANGE_PAIR,
@@ -138,7 +138,7 @@ public class ITExchangeGatewayHttp {
         final long size = 3;
 
         final int userCookie = 4124;
-        final long orderId = testService.placeOrder(SYMBOL_XBTC_USDT, uid, price, size, userCookie, OrderAction.BID, OrderType.GTC);
+        final long orderId = gatewayTestClient.placeOrder(SYMBOL_XBTC_USDT, uid, price, size, userCookie, OrderAction.BID, OrderType.GTC);
 
         RestApiOrderBook expected = RestApiOrderBook.builder()
                 .symbol(SYMBOL_XBTC_USDT)
@@ -148,10 +148,10 @@ public class ITExchangeGatewayHttp {
                 .bidVolumes(Collections.singletonList(3L))
                 .build();
 
-        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected));
+        assertThat(gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT), is(expected));
 
         {
-            final RestApiUserState userState = testService.getUserState(uid);
+            final RestApiUserState userState = gatewayTestClient.getUserState(uid);
             assertThat(userState.accounts.size(), is(1));
             final RestApiAccountState accountState = userState.accounts.get(0);
             assertThat(accountState.currency, is("USDT"));
@@ -173,20 +173,20 @@ public class ITExchangeGatewayHttp {
 
         // move order
 
-        testService.moveOrder(orderId, "XBTC_USDT", uid, BigDecimal.valueOf(829.29));
+        gatewayTestClient.moveOrder(orderId, "XBTC_USDT", uid, BigDecimal.valueOf(829.29));
 
         final BigDecimal newPrice = new BigDecimal("829.29");
-        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.singletonList(newPrice))));
-        assertThat(testService.getUserState(uid).activeOrders.get(0).getPrice(), is(newPrice));
+        assertThat(gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.singletonList(newPrice))));
+        assertThat(gatewayTestClient.getUserState(uid).activeOrders.get(0).getPrice(), is(newPrice));
 
         // cancel order
 
-        testService.cancelOrder(orderId, "XBTC_USDT", uid);
+        gatewayTestClient.cancelOrder(orderId, "XBTC_USDT", uid);
 
-        assertThat(testService.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.emptyList()).withBidVolumes(Collections.emptyList())));
-        assertThat(testService.getUserState(uid).activeOrders.size(), is(0));
+        assertThat(gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT), is(expected.withBidPrices(Collections.emptyList()).withBidVolumes(Collections.emptyList())));
+        assertThat(gatewayTestClient.getUserState(uid).activeOrders.size(), is(0));
 
-        final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid);
+        final RestApiUserTradesHistory history = gatewayTestClient.getUserTradesHistory(uid);
         assertThat(history.orders.size(), is(1));
         final RestApiOrder order = history.orders.get(0);
         assertThat(order.getOrderId(), is(orderId));
@@ -207,24 +207,24 @@ public class ITExchangeGatewayHttp {
     public void shouldTradeLimitOrder() throws Exception {
         final int uid1 = 1001;
         final int uid2 = 1002;
-        testService.createUser(uid1);
-        testService.createUser(uid2);
+        gatewayTestClient.createUser(uid1);
+        gatewayTestClient.createUser(uid2);
 
-        testService.addAsset(new RestApiAsset("XBTC", 9123, 8));
-        testService.addAsset(new RestApiAsset("USDT", 3412, 2));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("XBTC", 9123, 8));
+        gatewayTestClient.addAsset(new RestApiAdminAsset("USDT", 3412, 2));
 
         final BigDecimal initialBalanceXbtc1 = new BigDecimal("0.31047729");
-        testService.adjustUserBalance(uid1, "XBTC", initialBalanceXbtc1, 927910L);
+        gatewayTestClient.adjustUserBalance(uid1, "XBTC", initialBalanceXbtc1, 927910L);
 
         final BigDecimal initialBalanceUsdt2 = new BigDecimal("3627.29");
-        testService.adjustUserBalance(uid2, "USDT", initialBalanceUsdt2, 713223L);
+        gatewayTestClient.adjustUserBalance(uid2, "USDT", initialBalanceUsdt2, 713223L);
 
         final BigDecimal takerFee = new BigDecimal("0.08");
         final BigDecimal makerFee = new BigDecimal("0.03");
 
         final BigDecimal lotSize = new BigDecimal("0.1");
 
-        testService.addSymbol(new RestApiAddSymbol(
+        gatewayTestClient.addSymbol(new RestApiAddSymbol(
                 SYMBOL_XBTC_USDT,
                 3199,
                 SymbolType.CURRENCY_EXCHANGE_PAIR,
@@ -239,17 +239,42 @@ public class ITExchangeGatewayHttp {
                 new BigDecimal("50000"),
                 new BigDecimal("1000")));
 
+        {
+            // check exchange info data
+            RestApiExchangeInfo exchangeInfo = gatewayTestClient.getExchangeInfo();
+            assertThat(exchangeInfo.getAssets().size(), is(2));
+            final Map<String, RestApiAsset> assets = exchangeInfo.getAssets().stream().collect(Collectors.toMap(RestApiAsset::getAssetCode, a -> a));
+            assertThat(assets.get("XBTC").getScale(), is(8));
+            assertThat(assets.get("USDT").getScale(), is(2));
+
+            assertThat(exchangeInfo.getSymbols().size(), is(1));
+            RestApiSymbol symbol = exchangeInfo.getSymbols().get(0);
+
+            assertThat(symbol.getSymbolCode(), is(SYMBOL_XBTC_USDT));
+            assertThat(symbol.getSymbolType(), is(SymbolType.CURRENCY_EXCHANGE_PAIR));
+            assertThat(symbol.getBaseAsset(), is("XBTC"));
+            assertThat(symbol.getQuoteCurrency(), is("USDT"));
+            assertThat(symbol.getLotSize(), is(lotSize));
+            assertThat(symbol.getStepSize(), is(new BigDecimal("0.01")));
+            assertThat(symbol.getTakerFee(), is(takerFee));
+            assertThat(symbol.getMakerFee(), is(makerFee));
+            assertThat(symbol.getMarginBuy(), is(BigDecimal.ZERO));
+            assertThat(symbol.getMarginSell(), is(BigDecimal.ZERO));
+            assertThat(symbol.getPriceHighLimit(), is(new BigDecimal("50000")));
+            assertThat(symbol.getPriceLowLimit(), is(new BigDecimal("1000")));
+        }
+
         // place GTC ASK order 1
         final BigDecimal price1 = new BigDecimal("829.33");
         final long size1 = 3;
 
         final int userCookie1 = 123;
-        final long orderId1 = testService.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
+        final long orderId1 = gatewayTestClient.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
 
         final BigDecimal expectedBalanceXbtc1 = initialBalanceXbtc1.subtract(lotSize.multiply(BigDecimal.valueOf(size1)));
 
         {
-            final RestApiUserState userState = testService.getUserState(uid1);
+            final RestApiUserState userState = gatewayTestClient.getUserState(uid1);
             assertThat(userState.accounts.size(), is(1));
             final RestApiAccountState accountState = userState.accounts.get(0);
             assertThat(accountState.currency, is("XBTC"));
@@ -269,7 +294,7 @@ public class ITExchangeGatewayHttp {
             assertTrue(order.getDeals().isEmpty());
 
             // no bars yet
-            List<RestApiBar> bars = testService.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
+            List<RestApiBar> bars = gatewayTestClient.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
             assertTrue(bars.isEmpty());
         }
 
@@ -279,12 +304,12 @@ public class ITExchangeGatewayHttp {
 
 
         final int userCookie2 = 123; // other user can use the same cookie
-        final long orderId2 = testService.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
-        assertTrue(testService.getOrderBook(SYMBOL_XBTC_USDT).isEmpty());
+        final long orderId2 = gatewayTestClient.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
+        assertTrue(gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT).isEmpty());
 
         {
             // check user1 state
-            final RestApiUserState userState = testService.getUserState(uid1);
+            final RestApiUserState userState = gatewayTestClient.getUserState(uid1);
             assertThat(userState.accounts.size(), is(2));
             final Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
             // 0.31047729 - (3 * 0.1)
@@ -295,7 +320,7 @@ public class ITExchangeGatewayHttp {
             assertThat(userState.activeOrders.size(), is(0));
 
             // check user1 history
-            final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid1);
+            final RestApiUserTradesHistory history = gatewayTestClient.getUserTradesHistory(uid1);
             assertThat(history.orders.size(), is(1));
             final RestApiOrder order = history.orders.get(0);
             assertThat(order.getOrderId(), is(orderId1));
@@ -316,7 +341,7 @@ public class ITExchangeGatewayHttp {
 
         {
             // check user2 state
-            final RestApiUserState userState = testService.getUserState(uid2);
+            final RestApiUserState userState = gatewayTestClient.getUserState(uid2);
             assertThat(userState.accounts.size(), is(2));
             final Map<String, RestApiAccountState> accounts = userState.accounts.stream().collect(Collectors.toMap(a -> a.currency, a -> a));
             // 0 + (3 * 0.1)
@@ -327,7 +352,7 @@ public class ITExchangeGatewayHttp {
             assertThat(userState.activeOrders.size(), is(0));
 
             // check user2 history
-            final RestApiUserTradesHistory history = testService.getUserTradesHistory(uid2);
+            final RestApiUserTradesHistory history = gatewayTestClient.getUserTradesHistory(uid2);
             assertThat(history.orders.size(), is(1));
             final RestApiOrder order = history.orders.get(0);
             assertThat(order.getOrderId(), is(orderId2));
@@ -347,8 +372,8 @@ public class ITExchangeGatewayHttp {
         }
 
         {
-            // no bars yet
-            List<RestApiBar> bars = testService.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
+            // verify bars
+            List<RestApiBar> bars = gatewayTestClient.getBars(SYMBOL_XBTC_USDT, TimeFrame.M1, 100);
             assertThat(bars.size(), is(1));
             RestApiBar bar = bars.get(0);
             log.debug("Bar: {}", bar);

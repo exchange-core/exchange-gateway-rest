@@ -24,7 +24,7 @@ import exchange.core2.core.common.cmd.OrderCommand;
 import exchange.core2.rest.GatewayState;
 import exchange.core2.rest.commands.ApiErrorCodes;
 import exchange.core2.rest.commands.admin.RestApiAddSymbol;
-import exchange.core2.rest.commands.admin.RestApiAsset;
+import exchange.core2.rest.commands.admin.RestApiAdminAsset;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.RestGenericResponse;
 import exchange.core2.rest.model.internal.GatewayAssetSpec;
@@ -57,7 +57,7 @@ public class SyncAdminApiSymbolsController {
 
 
     @RequestMapping(value = "assets", method = RequestMethod.POST)
-    public ResponseEntity<RestGenericResponse> createAsset(@Valid @RequestBody RestApiAsset request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<RestGenericResponse> createAsset(@Valid @RequestBody RestApiAdminAsset request) throws ExecutionException, InterruptedException {
 
         log.info(">>> ADD ASSET {}", request);
 
@@ -66,7 +66,7 @@ public class SyncAdminApiSymbolsController {
                 .assetCode(request.assetCode)
                 .assetId(request.assetId)
                 .scale(request.scale)
-                .active(false)
+                .active(true) // TODO set to INACTIVE
                 .build();
 
         if (!gatewayState.registerNewAsset(spec)) {

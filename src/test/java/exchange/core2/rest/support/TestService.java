@@ -10,10 +10,9 @@ import exchange.core2.rest.commands.RestApiPlaceOrder;
 import exchange.core2.rest.commands.admin.RestApiAccountBalanceAdjustment;
 import exchange.core2.rest.commands.admin.RestApiAddSymbol;
 import exchange.core2.rest.commands.admin.RestApiAddUser;
-import exchange.core2.rest.commands.admin.RestApiAsset;
+import exchange.core2.rest.commands.admin.RestApiAdminAsset;
 import exchange.core2.rest.events.RestGenericResponse;
 import exchange.core2.rest.model.api.*;
-import exchange.core2.rest.model.internal.BarsData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -37,6 +36,8 @@ public class TestService extends TestSupport {
     private ApplicationContext applicationContext;
 
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     //public static final String LOCAL_SERVICE = "http://localhost:8080";
     public static final String SYNC_ADMIN_API_V1 = "/syncAdminApi/v1/";
     public static final String SYNC_TRADE_API_V1 = "/syncTradeApi/v1/";
@@ -44,7 +45,7 @@ public class TestService extends TestSupport {
 //    @Autowired
 //    private ApplicationContext applicationContext;
 
-    public void addAsset(RestApiAsset newAsset) throws Exception {
+    public void addAsset(RestApiAdminAsset newAsset) throws Exception {
 
         String url = SYNC_ADMIN_API_V1 + "/" + "assets";
 
@@ -237,16 +238,10 @@ public class TestService extends TestSupport {
 
         String contentAsString = result.getResponse().getContentAsString();
         log.debug("contentAsString=" + contentAsString);
-
-        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
         TypeReference<RestGenericResponse<RestApiOrderBook>> typeReference = new TypeReference<RestGenericResponse<RestApiOrderBook>>() {
         };
-        ObjectMapper objectMapper = new ObjectMapper();
-        RestGenericResponse<RestApiOrderBook> x = objectMapper.readValue(contentAsString, typeReference);
-
-        log.debug("re=" + x);
-
-        return x.getData();
+        RestGenericResponse<RestApiOrderBook> response = objectMapper.readValue(contentAsString, typeReference);
+        return response.getData();
     }
 
     public RestApiUserState getUserState(long uid) throws Exception {
@@ -262,17 +257,10 @@ public class TestService extends TestSupport {
                 .andReturn();
 
         String contentAsString = result.getResponse().getContentAsString();
-        log.debug("contentAsString=" + contentAsString);
-
-        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
         TypeReference<RestGenericResponse<RestApiUserState>> typeReference = new TypeReference<RestGenericResponse<RestApiUserState>>() {
         };
-        ObjectMapper objectMapper = new ObjectMapper();
-        RestGenericResponse<RestApiUserState> x = objectMapper.readValue(contentAsString, typeReference);
-
-        log.debug("re=" + x);
-
-        return x.getData();
+        RestGenericResponse<RestApiUserState> response = objectMapper.readValue(contentAsString, typeReference);
+        return response.getData();
     }
 
 
@@ -289,12 +277,8 @@ public class TestService extends TestSupport {
                 .andReturn();
 
         String contentAsString = result.getResponse().getContentAsString();
-        log.debug("contentAsString=" + contentAsString);
-
-        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
         TypeReference<RestGenericResponse<RestApiUserTradesHistory>> typeReference = new TypeReference<RestGenericResponse<RestApiUserTradesHistory>>() {
         };
-        ObjectMapper objectMapper = new ObjectMapper();
         RestGenericResponse<RestApiUserTradesHistory> response = objectMapper.readValue(contentAsString, typeReference);
         return response.getData();
     }
@@ -312,18 +296,29 @@ public class TestService extends TestSupport {
                 .andReturn();
 
         String contentAsString = result.getResponse().getContentAsString();
-        log.debug("contentAsString=" + contentAsString);
-
-        //return JsonPath.parse(contentAsString).read("$.data", RestApiOrderBook.class);
         TypeReference<RestGenericResponse<List<RestApiBar>>> typeReference = new TypeReference<RestGenericResponse<List<RestApiBar>>>() {
         };
-        ObjectMapper objectMapper = new ObjectMapper();
-        RestGenericResponse<List<RestApiBar>> x = objectMapper.readValue(contentAsString, typeReference);
-
-        log.debug("re=" + x);
-
-        return x.getData();
+        RestGenericResponse<List<RestApiBar>> response = objectMapper.readValue(contentAsString, typeReference);
+        return response.getData();
     }
 
+    public RestApiExchangeInfo getExchangeInfo() throws Exception {
+
+        String url = SYNC_TRADE_API_V1 + "/info/";
+
+        MvcResult result = mockMvc.perform(get(url))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(applicationJson))
+//                .andExpect(jsonPath("$.data.uid", is((int) uid)))
+                .andExpect(jsonPath("$.gatewayResultCode", is(0)))
+//                .andExpect(jsonPath("$.coreResultCode", is(100)))
+                .andReturn();
+
+        String contentAsString = result.getResponse().getContentAsString();
+        TypeReference<RestGenericResponse<RestApiExchangeInfo>> typeReference = new TypeReference<RestGenericResponse<RestApiExchangeInfo>>() {
+        };
+        RestGenericResponse<RestApiExchangeInfo> response = objectMapper.readValue(contentAsString, typeReference);
+        return response.getData();
+    }
 
 }

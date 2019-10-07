@@ -19,14 +19,14 @@ package exchange.core2.rest.commands.admin;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public final class RestApiAsset {
+public final class RestApiAdminAsset {
 
     public final String assetCode;
     public final int assetId;
     public final int scale; // asset scale - 2 for most currencies, 8 for BTC, 0 for JPY, etc
 
     @JsonCreator
-    public RestApiAsset(
+    public RestApiAdminAsset(
             @JsonProperty("assetCode") String assetCode,
             @JsonProperty("assetId") int assetId,
             @JsonProperty("scale") int scale) {

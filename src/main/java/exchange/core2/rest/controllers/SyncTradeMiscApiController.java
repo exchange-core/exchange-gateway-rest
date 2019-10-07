@@ -73,6 +73,8 @@ public class SyncTradeMiscApiController {
 
         final List<RestApiAsset> activeAssets = gatewayState.getActiveAssets(c -> new RestApiAsset(c.assetCode, c.scale));
 
+        log.info("EXCHANGE activeAssets >>>", activeAssets);
+
         final List<RestApiSymbol> activeSymbols = gatewayState.getActiveSymbols(s -> new RestApiSymbol(
                 s.symbolCode,
                 s.symbolType,
