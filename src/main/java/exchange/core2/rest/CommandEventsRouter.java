@@ -25,11 +25,13 @@ import exchange.core2.rest.commands.util.ArithmeticHelper;
 import exchange.core2.rest.events.*;
 import exchange.core2.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import exchange.core2.rest.events.admin.UserCreatedAdminEvent;
+import exchange.core2.rest.model.api.StompApiTick;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import exchange.core2.rest.model.internal.GatewayUserProfile;
 import exchange.core2.rest.model.internal.TickRecord;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -45,6 +47,9 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
     @Autowired
     private GatewayState gatewayState;
 
+    @Autowired
+    private SimpMessagingTemplate simpMessagingTemplate;
+//
 //    @Autowired
 //    private WebSocketServer webSocketServer;
 
@@ -144,6 +149,11 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         if (!ticks.isEmpty()) {
             gatewayState.addTicks(symbolSpec.symbolCode, ticks);
+
+            ticks.forEach(tick -> {
+                final StompApiTick apiTick = new StompApiTick(tick.getPrice(), tick.getSize(), tick.getTimestamp());
+                simpMessagingTemplate.convertAndSend("/topic/ticks/" + symbolSpec.symbolCode, apiTick);
+            });
         }
     }
 

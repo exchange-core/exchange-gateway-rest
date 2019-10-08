@@ -37,13 +37,25 @@
     </div>
     <div class="row">
         <div class="col-md-12">
+            <form class="form-inline">
+                <div class="form-group">
+                    <label for="connect">Symbol subscription:</label>
+                    <input type="text" id="symbol" class="form-control" placeholder="XBTCUSDT">
+                    <button id="subscribe" class="btn btn-default" type="submit">Subscribe</button>
+                    <button id="unsubscribe" class="btn btn-default" type="submit">Unsubscribe</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
             <table id="conversation" class="table table-striped">
                 <thead>
                 <tr>
-                    <th>Greetings</th>
+                    <th>Messages</th>
                 </tr>
                 </thead>
-                <tbody id="greetings">
+                <tbody id="messages">
                 </tbody>
             </table>
         </div>

@@ -15,14 +15,14 @@
  */
 package exchange.core2.rest.commands.admin;
 
-public class Greeting {
+public class StompApiNotificationMessage {
 
     private String content;
 
-    public Greeting() {
+    public StompApiNotificationMessage() {
     }
 
-    public Greeting(String content) {
+    public StompApiNotificationMessage(String content) {
         this.content = content;
     }
 
