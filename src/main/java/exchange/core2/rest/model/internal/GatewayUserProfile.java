@@ -25,6 +25,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,7 +80,8 @@ public class GatewayUserProfile {
             MatchingRole matchingRole,
             long timestamp,
             long counterOrderId,
-            long counterPartyUid) {
+            long counterPartyUid,
+            Consumer<GatewayOrder> notifier) {
 
         final GatewayOrder gatewayOrder = openOrders.get(orderId);
 
@@ -105,27 +107,31 @@ public class GatewayUserProfile {
                 .counterPartyUid(counterPartyUid)
                 .build());
 
+        notifier.accept(gatewayOrder);
     }
 
-    public synchronized void rejectOrder(long orderId) {
+    public synchronized void rejectOrder(long orderId, Consumer<GatewayOrder> notifier) {
         GatewayOrder gatewayOrder = openOrders.remove(orderId);
         ordersHistory.put(orderId, gatewayOrder);
         gatewayOrder.setState(GatewayOrderState.REJECTED);
         log.debug("MOVED order {} into history section", orderId);
+        notifier.accept(gatewayOrder);
     }
 
-    public synchronized void cancelOrder(long orderId) {
+    public synchronized void cancelOrder(long orderId, Consumer<GatewayOrder> notifier) {
         GatewayOrder gatewayOrder = openOrders.remove(orderId);
         ordersHistory.put(orderId, gatewayOrder);
         gatewayOrder.setState(GatewayOrderState.CANCELLED);
         log.debug("MOVED order {} into history section", orderId);
+        notifier.accept(gatewayOrder);
     }
 
 
-    public synchronized void updateOrderPrice(long orderId, BigDecimal newPrice) {
+    public synchronized void updateOrderPrice(long orderId, BigDecimal newPrice, Consumer<GatewayOrder> notifier) {
         GatewayOrder gatewayOrder = openOrders.get(orderId);
         ordersHistory.put(orderId, gatewayOrder);
         gatewayOrder.setPrice(newPrice);
+        notifier.accept(gatewayOrder);
     }
 
     public synchronized <T> List<T> mapHistoryOrders(Function<GatewayOrder, T> mapper) {

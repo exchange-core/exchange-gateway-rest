@@ -26,6 +26,8 @@ import exchange.core2.rest.events.*;
 import exchange.core2.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import exchange.core2.rest.events.admin.UserCreatedAdminEvent;
 import exchange.core2.rest.model.api.StompApiTick;
+import exchange.core2.rest.model.api.StompOrderUpdate;
+import exchange.core2.rest.model.internal.GatewayOrder;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import exchange.core2.rest.model.internal.GatewayUserProfile;
 import exchange.core2.rest.model.internal.TickRecord;
@@ -98,8 +100,10 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         if (cmd.command == OrderCommandType.MOVE_ORDER && cmd.resultCode == CommandResultCode.SUCCESS) {
             final GatewayUserProfile userProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
-            final BigDecimal newPrice = ArithmeticHelper.fromLongPrice(cmd.price, symbolSpec);
-            userProfile.updateOrderPrice(cmd.orderId, newPrice);
+            userProfile.updateOrderPrice(
+                    cmd.orderId,
+                    ArithmeticHelper.fromLongPrice(cmd.price, symbolSpec),
+                    order -> sendOrderUpdate(cmd.uid, order));
         }
 
         List<MatcherTradeEvent> matcherTradeEvents = cmd.extractEvents();
@@ -122,7 +126,8 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                         MatchingRole.TAKER,
                         evt.timestamp,
                         evt.matchedOrderId,
-                        evt.matchedOrderUid);
+                        evt.matchedOrderUid,
+                        order -> sendOrderUpdate(evt.activeOrderUid, order));
 
                 // update maker's profile
                 final GatewayUserProfile makerProfile = gatewayState.getOrCreateUserProfile(evt.matchedOrderUid);
@@ -133,17 +138,18 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                         MatchingRole.MAKER,
                         evt.timestamp,
                         evt.activeOrderId,
-                        evt.activeOrderUid);
+                        evt.activeOrderUid,
+                        order -> sendOrderUpdate(evt.matchedOrderUid, order));
 
                 ticks.add(new TickRecord(tradePrice, evt.size, evt.timestamp, evt.activeOrderAction));
 
             } else if (evt.eventType == MatcherEventType.REJECTION) {
                 final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
-                profile.rejectOrder(evt.activeOrderId);
+                profile.rejectOrder(evt.activeOrderId, order -> sendOrderUpdate(evt.activeOrderUid, order));
 
             } else if (evt.eventType == MatcherEventType.CANCEL) {
                 final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
-                profile.cancelOrder(evt.activeOrderId);
+                profile.cancelOrder(evt.activeOrderId, order -> sendOrderUpdate(evt.activeOrderUid, order));
             }
         }
 
@@ -261,5 +267,22 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
         UserCreatedAdminEvent apiEvent = UserCreatedAdminEvent.builder().uid(cmd.uid).build();
         //webSocketServer.broadcast(apiEvent);
         return apiEvent;
+    }
+
+    private void sendOrderUpdate(long uid, GatewayOrder gatewayOrder) {
+
+        final StompOrderUpdate orderUpdate = StompOrderUpdate.builder()
+                .orderId(gatewayOrder.getOrderId())
+                .price(gatewayOrder.getPrice())
+                .size(gatewayOrder.getSize())
+                .filled(gatewayOrder.getFilled())
+                .state(gatewayOrder.getState())
+                .userCookie(gatewayOrder.getUserCookie())
+                .action(gatewayOrder.getAction())
+                .orderType(gatewayOrder.getOrderType())
+                .symbol(gatewayOrder.getSymbol())
+                .build();
+
+        simpMessagingTemplate.convertAndSend("/topic/orders/uid/" + uid, orderUpdate);
     }
 }
