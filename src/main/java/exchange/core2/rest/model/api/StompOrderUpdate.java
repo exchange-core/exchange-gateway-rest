@@ -15,32 +15,63 @@
  */
 package exchange.core2.rest.model.api;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import exchange.core2.core.common.OrderAction;
 import exchange.core2.core.common.OrderType;
 import lombok.Builder;
-import lombok.Value;
+import lombok.Getter;
+import lombok.ToString;
 
 import java.math.BigDecimal;
 
-@JsonDeserialize(builder = StompOrderUpdate.StompOrderUpdateBuilder.class)
-@Value
-@Builder
+//@JsonDeserialize(builder = StompOrderUpdate.StompOrderUpdateBuilder.class)
+@Getter
+@ToString
 public class StompOrderUpdate {
 
+    // TODO remove immutable field
+
+    private final long uid;
     private final long orderId;
 
     private final BigDecimal price;
-    private final long size;
+    private final long size; // immutable
     private final long filled;
 
     private final GatewayOrderState state;
 
     private final int userCookie;
 
-    private final OrderAction action;
-    private final OrderType orderType;
+    private final OrderAction action;  // immutable
+    private final OrderType orderType; // immutable
+    private final String symbol; // immutable
 
-    private final String symbol;
+    @JsonCreator
+    @Builder
+    public StompOrderUpdate(
+            @JsonProperty("uid") long uid,
+            @JsonProperty("orderId") long orderId,
+            @JsonProperty("price") BigDecimal price,
+            @JsonProperty("size") long size,
+            @JsonProperty("filled") long filled,
+            @JsonProperty("state") GatewayOrderState state,
+            @JsonProperty("userCookie") int userCookie,
+            @JsonProperty("action") OrderAction action,
+            @JsonProperty("orderType") OrderType orderType,
+            @JsonProperty("symbol") String symbol) {
+
+        this.uid = uid;
+        this.orderId = orderId;
+        this.price = price;
+        this.size = size;
+        this.filled = filled;
+        this.state = state;
+        this.userCookie = userCookie;
+        this.action = action;
+        this.orderType = orderType;
+        this.symbol = symbol;
+    }
+
 
 }

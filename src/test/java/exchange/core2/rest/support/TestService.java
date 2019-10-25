@@ -42,6 +42,7 @@ public class TestService extends TestSupport {
     public static final String SYNC_TRADE_API_V1 = "/syncTradeApi/v1/";
 
     public static final String STOMP_TOPIC_TICKS_PREFIX = "/topic/ticks/";
+    public static final String STOMP_TOPIC_ORDERS_PREFIX = "/topic/orders/uid/";
 
 //    @Autowired
 //    private ApplicationContext applicationContext;

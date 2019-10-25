@@ -56,6 +56,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 //    private WebSocketServer webSocketServer;
 
     public static final String STOMP_TOPIC_TICKS_PREFIX = "/topic/ticks/";
+    public static final String STOMP_TOPIC_ORDER_PREFIX = "/topic/orders/";
 
     /**
      * TODO put non-latency-critical commands into a queue
@@ -100,6 +101,13 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         final GatewaySymbolSpec symbolSpec = gatewayState.getSymbolSpec(cmd.symbol);
 
+        // activate order (dont send update because placing is sync)
+        if (cmd.command == OrderCommandType.PLACE_ORDER && cmd.resultCode == CommandResultCode.SUCCESS) {
+            final GatewayUserProfile userProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            userProfile.activateOrder(cmd.orderId);
+        }
+
+        // update order price
         if (cmd.command == OrderCommandType.MOVE_ORDER && cmd.resultCode == CommandResultCode.SUCCESS) {
             final GatewayUserProfile userProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
             userProfile.updateOrderPrice(
@@ -143,6 +151,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                         evt.activeOrderUid,
                         order -> sendOrderUpdate(evt.matchedOrderUid, order));
 
+                // todo aggregate ticks having same price
                 ticks.add(new TickRecord(tradePrice, evt.size, evt.timestamp, evt.activeOrderAction));
 
             } else if (evt.eventType == MatcherEventType.REJECTION) {
@@ -277,6 +286,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
     private void sendOrderUpdate(long uid, GatewayOrder gatewayOrder) {
 
         final StompOrderUpdate orderUpdate = StompOrderUpdate.builder()
+                .uid(uid)
                 .orderId(gatewayOrder.getOrderId())
                 .price(gatewayOrder.getPrice())
                 .size(gatewayOrder.getSize())
@@ -288,6 +298,6 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                 .symbol(gatewayOrder.getSymbol())
                 .build();
 
-        simpMessagingTemplate.convertAndSend("/topic/orders/uid/" + uid, orderUpdate);
+        simpMessagingTemplate.convertAndSend(STOMP_TOPIC_ORDER_PREFIX + "uid/" + uid, orderUpdate);
     }
 }

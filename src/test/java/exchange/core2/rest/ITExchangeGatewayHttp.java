@@ -21,6 +21,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -216,10 +217,13 @@ public class ITExchangeGatewayHttp {
     @DirtiesContext
     public void shouldTradeLimitOrder() throws Exception {
 
-        final StompTestClient stompTestClient = StompTestClient.create(SYMBOL_XBTC_USDT, randomServerPort);
 
-        final int uid1 = 1001;
-        final int uid2 = 1002;
+        final long uid1 = 1001L;
+        final long uid2 = 1002L;
+
+        final StompTestClient stompTestClient = StompTestClient.create(
+                SYMBOL_XBTC_USDT, Arrays.asList(uid1, uid2), randomServerPort);
+
         gatewayTestClient.createUser(uid1);
         gatewayTestClient.createUser(uid2);
 
@@ -324,6 +328,50 @@ public class ITExchangeGatewayHttp {
         assertThat(tick.getVolume(), is(3L));
         // todo check timestamp
         assertFalse(stompTestClient.hasTicks());
+
+        Map<Long, List<StompOrderUpdate>> orderUpdates = stompTestClient.pollOrderUpdates(3);
+        List<StompOrderUpdate> uid1Updates = orderUpdates.get(uid1);
+        assertThat(uid1Updates.size(), is(1));
+
+        StompOrderUpdate uid1Update1 = uid1Updates.get(0);
+        assertThat(uid1Update1.getUid(), is(uid1));
+        assertThat(uid1Update1.getOrderId(), is(orderId1));
+        assertThat(uid1Update1.getPrice(), is(price1));
+        assertThat(uid1Update1.getSize(), is(size1));
+        assertThat(uid1Update1.getFilled(), is(size1));
+        assertThat(uid1Update1.getState(), is(GatewayOrderState.COMPLETED));
+        assertThat(uid1Update1.getUserCookie(), is(userCookie1));
+        assertThat(uid1Update1.getAction(), is(OrderAction.ASK));
+        assertThat(uid1Update1.getOrderType(), is(OrderType.GTC));
+        assertThat(uid1Update1.getSymbol(), is(SYMBOL_XBTC_USDT));
+
+
+        List<StompOrderUpdate> uid2Updates = orderUpdates.get(uid2);
+        assertThat(uid2Updates.size(), is(2));
+
+        StompOrderUpdate uid2Update1 = uid2Updates.get(0);
+        assertThat(uid2Update1.getUid(), is(uid2));
+        assertThat(uid2Update1.getOrderId(), is(orderId2));
+        assertThat(uid2Update1.getPrice(), is(price2));
+        assertThat(uid2Update1.getSize(), is(size2));
+        assertThat(uid2Update1.getFilled(), is(size1));
+        assertThat(uid2Update1.getState(), is(GatewayOrderState.PARTIALLY_FILLED));
+        assertThat(uid2Update1.getUserCookie(), is(userCookie2));
+        assertThat(uid2Update1.getAction(), is(OrderAction.BID));
+        assertThat(uid2Update1.getOrderType(), is(OrderType.IOC));
+        assertThat(uid2Update1.getSymbol(), is(SYMBOL_XBTC_USDT));
+
+        StompOrderUpdate uid2Update2 = uid2Updates.get(1);
+        assertThat(uid2Update2.getUid(), is(uid2));
+        assertThat(uid2Update2.getOrderId(), is(orderId2));
+        assertThat(uid2Update2.getPrice(), is(price2));
+        assertThat(uid2Update2.getSize(), is(size2));
+        assertThat(uid2Update2.getFilled(), is(size1));
+        assertThat(uid2Update2.getState(), is(GatewayOrderState.REJECTED));
+        assertThat(uid2Update2.getUserCookie(), is(userCookie2));
+        assertThat(uid2Update2.getAction(), is(OrderAction.BID));
+        assertThat(uid2Update2.getOrderType(), is(OrderType.IOC));
+        assertThat(uid2Update2.getSymbol(), is(SYMBOL_XBTC_USDT));
 
         {
             // check user1 state
