@@ -35,12 +35,13 @@ public class TestService extends TestSupport {
     @Autowired
     private ApplicationContext applicationContext;
 
-
     private ObjectMapper objectMapper = new ObjectMapper();
 
     //public static final String LOCAL_SERVICE = "http://localhost:8080";
     public static final String SYNC_ADMIN_API_V1 = "/syncAdminApi/v1/";
     public static final String SYNC_TRADE_API_V1 = "/syncTradeApi/v1/";
+
+    public static final String STOMP_TOPIC_TICKS_PREFIX = "/topic/ticks/";
 
 //    @Autowired
 //    private ApplicationContext applicationContext;

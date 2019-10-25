@@ -7,12 +7,15 @@ import exchange.core2.rest.commands.admin.RestApiAddSymbol;
 import exchange.core2.rest.commands.admin.RestApiAdminAsset;
 import exchange.core2.rest.events.MatchingRole;
 import exchange.core2.rest.model.api.*;
+import exchange.core2.rest.support.StompTestClient;
 import exchange.core2.rest.support.TestService;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -27,7 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.comparesEqualTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 @RunWith(SpringRunner.class)
@@ -44,8 +47,15 @@ public class ITExchangeGatewayHttp {
 
     public static final String SYMBOL_XBTC_USDT = "XBTC_USDT";
 
+    @LocalServerPort
+    int randomServerPort;
+
     @Autowired
     private TestService gatewayTestClient;
+
+    @Before
+    public void before() {
+    }
 
     @Test
     @DirtiesContext
@@ -205,6 +215,9 @@ public class ITExchangeGatewayHttp {
     @Test
     @DirtiesContext
     public void shouldTradeLimitOrder() throws Exception {
+
+        final StompTestClient stompTestClient = StompTestClient.create(SYMBOL_XBTC_USDT, randomServerPort);
+
         final int uid1 = 1001;
         final int uid2 = 1002;
         gatewayTestClient.createUser(uid1);
@@ -301,11 +314,16 @@ public class ITExchangeGatewayHttp {
         // submit IoC BID order 2
         final BigDecimal price2 = new BigDecimal("829.41");
         final long size2 = 4; // 1 lot will be rejected
-
-
         final int userCookie2 = 123; // other user can use the same cookie
         final long orderId2 = gatewayTestClient.placeOrder(SYMBOL_XBTC_USDT, uid2, price2, size2, userCookie2, OrderAction.BID, OrderType.IOC);
         assertTrue(gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT).isEmpty());
+
+        final StompApiTick tick = stompTestClient.pollTick();
+        assertNotNull(tick);
+        assertThat(tick.getPrice(), is(price1));
+        assertThat(tick.getVolume(), is(3L));
+        // todo check timestamp
+        assertFalse(stompTestClient.hasTicks());
 
         {
             // check user1 state

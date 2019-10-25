@@ -50,27 +50,27 @@ public class GreetingController {
         return new StompApiNotificationMessage("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!");
     }
 
-    @PostConstruct
-    public void start() {
-        CompletableFuture.supplyAsync(() -> {
-
-            while (true) {
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                log.debug("Sending heartbit...");
-                simpMessagingTemplate.convertAndSend("/topic/notifications", new StompApiNotificationMessage(Instant.now().toString()));
-
-                Random rnd = ThreadLocalRandom.current();
-                simpMessagingTemplate.convertAndSend(
-                        "/topic/ticks/XBTCUSDT",
-                        new StompApiTick(BigDecimal.valueOf(rnd.nextFloat()), rnd.nextInt(100), System.currentTimeMillis()));
-            }
-
-        });
-
-    }
+//    @PostConstruct
+//    public void start() {
+//        CompletableFuture.supplyAsync(() -> {
+//
+//            while (true) {
+//                try {
+//                    Thread.sleep(2000);
+//                } catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//                log.debug("Sending heartbit...");
+//                simpMessagingTemplate.convertAndSend("/topic/notifications", new StompApiNotificationMessage(Instant.now().toString()));
+//
+//                Random rnd = ThreadLocalRandom.current();
+//                simpMessagingTemplate.convertAndSend(
+//                        "/topic/ticks/XBTCUSDT",
+//                        new StompApiTick(BigDecimal.valueOf(rnd.nextFloat()), rnd.nextInt(100), System.currentTimeMillis()));
+//            }
+//
+//        });
+//
+//    }
 
 }

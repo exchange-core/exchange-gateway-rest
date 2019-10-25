@@ -55,6 +55,8 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 //    @Autowired
 //    private WebSocketServer webSocketServer;
 
+    public static final String STOMP_TOPIC_TICKS_PREFIX = "/topic/ticks/";
+
     /**
      * TODO put non-latency-critical commands into a queue
      *
@@ -158,7 +160,10 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
             ticks.forEach(tick -> {
                 final StompApiTick apiTick = new StompApiTick(tick.getPrice(), tick.getSize(), tick.getTimestamp());
-                simpMessagingTemplate.convertAndSend("/topic/ticks/" + symbolSpec.symbolCode, apiTick);
+                simpMessagingTemplate.convertAndSend(STOMP_TOPIC_TICKS_PREFIX + symbolSpec.symbolCode, apiTick);
+                log.debug("#### Sent tick {} {}", STOMP_TOPIC_TICKS_PREFIX + symbolSpec.symbolCode, apiTick);
+//                simpMessagingTemplate.convertAndSend("abc", "symbol123");
+
             });
         }
     }
