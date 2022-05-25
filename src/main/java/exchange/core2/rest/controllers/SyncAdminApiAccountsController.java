@@ -15,6 +15,7 @@
  */
 package exchange.core2.rest.controllers;
 
+import exchange.core2.core.common.BalanceAdjustmentType;
 import lombok.extern.slf4j.Slf4j;
 import exchange.core2.core.common.cmd.OrderCommand;
 import exchange.core2.core.ExchangeApi;
@@ -127,7 +128,7 @@ public class SyncAdminApiAccountsController {
 
         ExchangeApi api = exchangeCore.getApi();
         CompletableFuture<OrderCommand> future = new CompletableFuture<>();
-        api.balanceAdjustment(uid, request.getTransactionId(), currency.assetId, longAmount, future::complete);
+        api.balanceAdjustment(uid, request.getTransactionId(), currency.assetId, longAmount, BalanceAdjustmentType.ADJUSTMENT, future::complete);
 
         OrderCommand orderCommand = future.get();
         log.info("<<< ADD BALANCE {}", orderCommand);

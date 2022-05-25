@@ -21,6 +21,7 @@ import exchange.core2.core.common.Order;
 import exchange.core2.core.common.OrderType;
 import exchange.core2.core.common.api.reports.SingleUserReportQuery;
 import exchange.core2.core.common.api.reports.SingleUserReportResult;
+import exchange.core2.core.common.api.reports.SingleUserReportResult.QueryExecutionStatus;
 import exchange.core2.rest.GatewayState;
 import exchange.core2.rest.commands.ApiErrorCodes;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
@@ -63,7 +64,7 @@ public class SyncTradeAccountApiController {
 
         log.debug("{}", reportResult);
 
-        if (reportResult.getStatus() == SingleUserReportResult.ExecutionStatus.OK) {
+        if (reportResult.getQueryExecutionStatus() == QueryExecutionStatus.OK) {
 
             final List<RestApiOrder> activeOrders = new ArrayList<>();
 
@@ -88,7 +89,7 @@ public class SyncTradeAccountApiController {
                         .build()));
             });
 
-            final IntLongHashMap profileAccounts = reportResult.getUserProfile().accounts;
+            final IntLongHashMap profileAccounts = reportResult.getAccounts();
 
             final List<RestApiAccountState> accounts = new ArrayList<>(profileAccounts.size());
             profileAccounts.forEachKeyValue((assetId, balance) -> {
