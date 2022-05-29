@@ -16,6 +16,7 @@
 package exchange.core2.rest.controllers;
 
 import exchange.core2.core.common.BalanceAdjustmentType;
+import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import exchange.core2.core.common.cmd.OrderCommand;
 import exchange.core2.core.ExchangeApi;
@@ -32,7 +33,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -82,7 +82,7 @@ public class SyncAdminApiAccountsController {
 
     @RequestMapping(value = "users", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.CREATED)
-    public RestGenericResponse createUser(@Valid @RequestBody RestApiAddUser request) throws ExecutionException, InterruptedException {
+    public RestGenericResponse createUser(@RequestBody RestApiAddUser request) throws ExecutionException, InterruptedException {
 
         log.info("ADD USER >>> {}", request);
 
@@ -107,7 +107,7 @@ public class SyncAdminApiAccountsController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<RestGenericResponse> adjustBalance(
             @PathVariable long uid,
-            @Valid @RequestBody RestApiAccountBalanceAdjustment request) throws ExecutionException, InterruptedException {
+            @RequestBody RestApiAccountBalanceAdjustment request) throws ExecutionException, InterruptedException {
 
         log.info("ADD BALANCE >>> {} {}", uid, request);
 

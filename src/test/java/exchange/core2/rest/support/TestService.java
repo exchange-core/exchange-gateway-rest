@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.math.BigDecimal;
 import java.util.List;
+import org.springframework.test.web.servlet.ResultActions;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -112,8 +113,8 @@ public class TestService extends TestSupport {
         String rawRequest = json(request);
         log.debug("request: \n{}", rawRequest);
 
-
-        MvcResult result = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson))
+        ResultActions perform = mockMvc.perform(post(url).content(rawRequest).contentType(applicationJson));
+        MvcResult result = perform
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(applicationJson))
                 .andExpect(jsonPath("$.data", is((int) uid)))

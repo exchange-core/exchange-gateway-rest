@@ -52,8 +52,8 @@ public class GatewayState {
 
     private final Map<String, ChartData> charts = new ConcurrentHashMap<>();
 
-    @Autowired
-    private ExchangeCore exchangeCore;
+//    @Autowired
+//    private ExchangeCore exchangeCore;
 
     public GatewaySymbolSpec getSymbolSpec(String symbolCode) {
         return symbolsByCode.get(symbolCode);
@@ -133,17 +133,17 @@ public class GatewayState {
     public Optional<List<GatewayBarStatic>> getBars(String symbolCode, int barsNum, TimeFrame timeFrame) {
         return Optional.ofNullable(charts.get(symbolCode)).map(chartData -> chartData.getBarsData(barsNum, timeFrame));
     }
-
-    @PostConstruct
-    public void start() {
-        log.debug("START1");
-        exchangeCore.startup();
-    }
-
-    @PreDestroy
-    public void stop() {
-        log.debug("STOP1");
-        exchangeCore.shutdown();
-    }
+//
+//    @PostConstruct
+//    public void start() {
+//        log.debug("START1");
+//        exchangeCore.startup();
+//    }
+//
+//    @PreDestroy
+//    public void stop() {
+//        log.debug("STOP1");
+//        exchangeCore.shutdown();
+//    }
 
 }

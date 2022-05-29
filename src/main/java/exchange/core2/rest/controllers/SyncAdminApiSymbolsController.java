@@ -39,7 +39,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -57,7 +56,7 @@ public class SyncAdminApiSymbolsController {
 
 
     @RequestMapping(value = "assets", method = RequestMethod.POST)
-    public ResponseEntity<RestGenericResponse> createAsset(@Valid @RequestBody RestApiAdminAsset request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<RestGenericResponse> createAsset(@RequestBody RestApiAdminAsset request) throws ExecutionException, InterruptedException {
 
         log.info(">>> ADD ASSET {}", request);
 
@@ -78,7 +77,7 @@ public class SyncAdminApiSymbolsController {
     }
 
     @RequestMapping(value = "symbols", method = RequestMethod.POST)
-    public ResponseEntity<RestGenericResponse> createSymbol(@Valid @RequestBody RestApiAddSymbol request) throws ExecutionException, InterruptedException {
+    public ResponseEntity<RestGenericResponse> createSymbol(@RequestBody RestApiAddSymbol request) throws ExecutionException, InterruptedException {
 
         log.info("ADD SYMBOL >>> {}", request);
 

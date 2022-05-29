@@ -15,6 +15,7 @@
  */
 package exchange.core2.rest.model.internal;
 
+import exchange.core2.core.IEventsHandler.RejectEvent;
 import exchange.core2.core.common.Order;
 import exchange.core2.rest.commands.RestApiPlaceOrder;
 import exchange.core2.rest.events.MatchingRole;
@@ -29,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.agrona.collections.MutableReference;
 
 
 /**
@@ -110,13 +112,20 @@ public class GatewayUserProfile {
         notifier.accept(gatewayOrder);
     }
 
-    public synchronized void rejectOrder(long orderId, Consumer<GatewayOrder> notifier) {
-        GatewayOrder gatewayOrder = openOrders.remove(orderId);
-        ordersHistory.put(orderId, gatewayOrder);
+    public synchronized void rejectOrder(MutableReference<RejectEvent> evt, Consumer<GatewayOrder> notifier) {
+        GatewayOrder gatewayOrder = openOrders.remove(evt.ref.orderId);
         gatewayOrder.setState(GatewayOrderState.REJECTED);
-        log.debug("MOVED order {} into history section", orderId);
+        ordersHistory.put(evt.ref.orderId, gatewayOrder);
+        log.debug("MOVED order {} into history section", evt.ref.orderId);
         notifier.accept(gatewayOrder);
     }
+//    btc-usdt
+//    Ask:   3: 9000
+
+//    Bid:  5: 9100   IOC
+//    9000 : 3 ,  2 cancel
+//2: reject  1
+//3: trade   2
 
     public synchronized void cancelOrder(long orderId, Consumer<GatewayOrder> notifier) {
         GatewayOrder gatewayOrder = openOrders.remove(orderId);

@@ -230,7 +230,7 @@ public class ITExchangeGatewayHttp {
         gatewayTestClient.addAsset(new RestApiAdminAsset("XBTC", 9123, 8));
         gatewayTestClient.addAsset(new RestApiAdminAsset("USDT", 3412, 2));
 
-        final BigDecimal initialBalanceXbtc1 = new BigDecimal("0.31047729");
+        final BigDecimal initialBalanceXbtc1 = new BigDecimal("5.31047729");
         gatewayTestClient.adjustUserBalance(uid1, "XBTC", initialBalanceXbtc1, 927910L);
 
         final BigDecimal initialBalanceUsdt2 = new BigDecimal("3627.29");
@@ -286,7 +286,9 @@ public class ITExchangeGatewayHttp {
         final long size1 = 3;
 
         final int userCookie1 = 123;
+        RestApiUserState userState1 = gatewayTestClient.getUserState(uid1);
         final long orderId1 = gatewayTestClient.placeOrder(SYMBOL_XBTC_USDT, uid1, price1, size1, userCookie1, OrderAction.ASK, OrderType.GTC);
+        RestApiOrderBook orderBook = gatewayTestClient.getOrderBook(SYMBOL_XBTC_USDT);
 
         final BigDecimal expectedBalanceXbtc1 = initialBalanceXbtc1.subtract(lotSize.multiply(BigDecimal.valueOf(size1)));
 

@@ -15,37 +15,16 @@
  */
 package exchange.core2.rest;
 
-import exchange.core2.core.ExchangeCore;
-import exchange.core2.core.common.config.ExchangeConfiguration;
-import exchange.core2.core.common.config.SerializationConfiguration;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 
-@SpringBootApplication(scanBasePackages = "exchange.core2.rest")
-@EnableConfigurationProperties
-@Configuration
-@Slf4j
+@SpringBootApplication
 public class RestGatewayApplication {
-
     public static void main(String[] args) {
         SpringApplication.run(RestGatewayApplication.class, args);
     }
 
-    @Bean
-    public ExchangeCore exchangeCore(@Autowired CommandEventsRouter eventsRouter) {
-        // default exchange configuration
-        ExchangeConfiguration conf = ExchangeConfiguration.defaultBuilder()
-            .serializationCfg(SerializationConfiguration.DISK_JOURNALING).build();
-        return ExchangeCore.builder()
-            .resultsConsumer(eventsRouter)
-            .exchangeConfiguration(conf).build();
-    }
 
     //    @Bean
     //    public Consumer<OrderCommand> resultsConsumer() {

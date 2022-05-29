@@ -15,6 +15,8 @@
  */
 package exchange.core2.rest;
 
+import exchange.core2.core.IEventsHandler;
+import exchange.core2.core.IEventsHandler.RejectEvent;
 import exchange.core2.core.common.L2MarketData;
 import exchange.core2.core.common.MatcherEventType;
 import exchange.core2.core.common.MatcherTradeEvent;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjLongConsumer;
 import lombok.extern.slf4j.Slf4j;
+import org.agrona.collections.MutableReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -121,11 +124,22 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                     order -> sendOrderUpdate(cmd.uid, order));
         }
 
-        List<MatcherTradeEvent> matcherTradeEvents = cmd.extractEvents();
+        MatcherTradeEvent firstEvent = cmd.matcherEvent;
+        if (firstEvent == null) {
+            return;
+        }
+        if (firstEvent.eventType == MatcherEventType.REDUCE) {
+            if (firstEvent.nextEvent != null) {
+                throw new IllegalStateException("Only single REDUCE event is expected");
+            }
+            final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            profile.cancelOrder(cmd.orderId, order -> sendOrderUpdate(cmd.uid, order));
+            return;
+        }
 
+        final MutableReference<RejectEvent> rejectEvent = new MutableReference<>(null);
         List<TickRecord> ticks = new ArrayList<>();
-
-        for (MatcherTradeEvent evt : matcherTradeEvents) {
+        cmd.processMatcherEvents(evt -> {
             log.debug("INTERNAL EVENT: " + evt);
             if (evt.eventType == MatcherEventType.TRADE) {
 
@@ -135,38 +149,46 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                 // update taker's profile
                 final GatewayUserProfile takerProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
                 takerProfile.tradeOrder(
-                        cmd.orderId,
-                        evt.size,
-                        tradePrice,
-                        MatchingRole.TAKER,
-                        cmd.timestamp,
-                        evt.matchedOrderId,
-                        evt.matchedOrderUid,
-                        order -> sendOrderUpdate(cmd.uid, order));
+                    cmd.orderId,
+                    evt.size,
+                    tradePrice,
+                    MatchingRole.TAKER,
+                    cmd.timestamp,
+                    evt.matchedOrderId,
+                    evt.matchedOrderUid,
+                    order -> sendOrderUpdate(cmd.uid, order));
 
                 // update maker's profile
                 final GatewayUserProfile makerProfile = gatewayState.getOrCreateUserProfile(evt.matchedOrderUid);
                 makerProfile.tradeOrder(
-                        evt.matchedOrderId,
-                        evt.size,
-                        tradePrice,
-                        MatchingRole.MAKER,
-                        cmd.timestamp,
-                        cmd.orderId,
-                        cmd.uid,
-                        order -> sendOrderUpdate(evt.matchedOrderUid, order));
+                    evt.matchedOrderId,
+                    evt.size,
+                    tradePrice,
+                    MatchingRole.MAKER,
+                    cmd.timestamp,
+                    cmd.orderId,
+                    cmd.uid,
+                    order -> sendOrderUpdate(evt.matchedOrderUid, order));
 
                 // todo aggregate ticks having same price
                 ticks.add(new TickRecord(tradePrice, evt.size, cmd.timestamp, cmd.action));
 
             } else if (evt.eventType == MatcherEventType.REJECT) {
-                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
-                profile.rejectOrder(cmd.orderId, order -> sendOrderUpdate(cmd.uid, order));
-
+                rejectEvent.set(new IEventsHandler.RejectEvent(
+                    cmd.symbol,
+                    evt.size,
+                    evt.price,
+                    cmd.orderId,
+                    cmd.uid,
+                    cmd.timestamp));
             } else if (evt.eventType == MatcherEventType.REDUCE) {
-                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
-                profile.cancelOrder(cmd.orderId, order -> sendOrderUpdate(cmd.uid, order));
+                //todo reduce
             }
+        });
+
+        if (rejectEvent.ref != null) {
+            final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            profile.rejectOrder(rejectEvent, order -> sendOrderUpdate(cmd.uid, order));
         }
 
         if (!ticks.isEmpty()) {
@@ -180,6 +202,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
             });
         }
+
     }
 
     private void processData(long seq, OrderCommand cmd) {
