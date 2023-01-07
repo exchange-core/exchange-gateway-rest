@@ -36,7 +36,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,7 +95,7 @@ public class SyncTradeOrdersApiController {
     public ResponseEntity<RestGenericResponse> placeOrder(
             @PathVariable long uid,
             @PathVariable String symbol,
-            @Valid @RequestBody RestApiPlaceOrder placeOrder) throws ExecutionException, InterruptedException {
+            @RequestBody RestApiPlaceOrder placeOrder) throws ExecutionException, InterruptedException {
 
         log.info("PLACE ORDER >>> {}", placeOrder);
 
@@ -156,7 +155,7 @@ public class SyncTradeOrdersApiController {
             @PathVariable long uid,
             @PathVariable String symbol,
             @PathVariable long orderId,
-            @Valid @RequestBody RestApiMoveOrder moveOrder) throws ExecutionException, InterruptedException {
+            @RequestBody RestApiMoveOrder moveOrder) throws ExecutionException, InterruptedException {
 
         log.info("MOVE ORDER >>> {} uid={} {}", orderId, uid, moveOrder);
 

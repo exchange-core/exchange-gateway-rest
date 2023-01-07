@@ -15,6 +15,8 @@
  */
 package exchange.core2.rest;
 
+import exchange.core2.core.IEventsHandler;
+import exchange.core2.core.IEventsHandler.RejectEvent;
 import exchange.core2.core.common.L2MarketData;
 import exchange.core2.core.common.MatcherEventType;
 import exchange.core2.core.common.MatcherTradeEvent;
@@ -22,7 +24,13 @@ import exchange.core2.core.common.cmd.CommandResultCode;
 import exchange.core2.core.common.cmd.OrderCommand;
 import exchange.core2.core.common.cmd.OrderCommandType;
 import exchange.core2.rest.commands.util.ArithmeticHelper;
-import exchange.core2.rest.events.*;
+import exchange.core2.rest.events.MatchingRole;
+import exchange.core2.rest.events.NewTradeRecord;
+import exchange.core2.rest.events.OrderBookEvent;
+import exchange.core2.rest.events.OrderSizeChangeRecord;
+import exchange.core2.rest.events.OrderUpdateEvent;
+import exchange.core2.rest.events.ReduceRecord;
+import exchange.core2.rest.events.RejectionRecord;
 import exchange.core2.rest.events.admin.UserBalanceAdjustmentAdminEvent;
 import exchange.core2.rest.events.admin.UserCreatedAdminEvent;
 import exchange.core2.rest.model.api.StompApiTick;
@@ -31,15 +39,15 @@ import exchange.core2.rest.model.internal.GatewayOrder;
 import exchange.core2.rest.model.internal.GatewaySymbolSpec;
 import exchange.core2.rest.model.internal.GatewayUserProfile;
 import exchange.core2.rest.model.internal.TickRecord;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.ObjLongConsumer;
+import lombok.extern.slf4j.Slf4j;
+import org.agrona.collections.MutableReference;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
 
 
 @Service
@@ -94,7 +102,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         // TODO
 
-        if (cmd.command == OrderCommandType.BINARY_DATA) {
+        if (cmd.command == OrderCommandType.BINARY_DATA_COMMAND || cmd.command == OrderCommandType.BINARY_DATA_QUERY) {
             // ignore binary commands further
             return;
         }
@@ -116,11 +124,22 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                     order -> sendOrderUpdate(cmd.uid, order));
         }
 
-        List<MatcherTradeEvent> matcherTradeEvents = cmd.extractEvents();
+        MatcherTradeEvent firstEvent = cmd.matcherEvent;
+        if (firstEvent == null) {
+            return;
+        }
+        if (firstEvent.eventType == MatcherEventType.REDUCE) {
+            if (firstEvent.nextEvent != null) {
+                throw new IllegalStateException("Only single REDUCE event is expected");
+            }
+            final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            profile.cancelOrder(cmd.orderId, order -> sendOrderUpdate(cmd.uid, order));
+            return;
+        }
 
+        final MutableReference<RejectEvent> rejectEvent = new MutableReference<>(null);
         List<TickRecord> ticks = new ArrayList<>();
-
-        for (MatcherTradeEvent evt : matcherTradeEvents) {
+        cmd.processMatcherEvents(evt -> {
             log.debug("INTERNAL EVENT: " + evt);
             if (evt.eventType == MatcherEventType.TRADE) {
 
@@ -128,40 +147,48 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
                 final BigDecimal tradePrice = ArithmeticHelper.fromLongPrice(evt.price, symbolSpec);
 
                 // update taker's profile
-                final GatewayUserProfile takerProfile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
+                final GatewayUserProfile takerProfile = gatewayState.getOrCreateUserProfile(cmd.uid);
                 takerProfile.tradeOrder(
-                        evt.activeOrderId,
-                        evt.size,
-                        tradePrice,
-                        MatchingRole.TAKER,
-                        evt.timestamp,
-                        evt.matchedOrderId,
-                        evt.matchedOrderUid,
-                        order -> sendOrderUpdate(evt.activeOrderUid, order));
+                    cmd.orderId,
+                    evt.size,
+                    tradePrice,
+                    MatchingRole.TAKER,
+                    cmd.timestamp,
+                    evt.matchedOrderId,
+                    evt.matchedOrderUid,
+                    order -> sendOrderUpdate(cmd.uid, order));
 
                 // update maker's profile
                 final GatewayUserProfile makerProfile = gatewayState.getOrCreateUserProfile(evt.matchedOrderUid);
                 makerProfile.tradeOrder(
-                        evt.matchedOrderId,
-                        evt.size,
-                        tradePrice,
-                        MatchingRole.MAKER,
-                        evt.timestamp,
-                        evt.activeOrderId,
-                        evt.activeOrderUid,
-                        order -> sendOrderUpdate(evt.matchedOrderUid, order));
+                    evt.matchedOrderId,
+                    evt.size,
+                    tradePrice,
+                    MatchingRole.MAKER,
+                    cmd.timestamp,
+                    cmd.orderId,
+                    cmd.uid,
+                    order -> sendOrderUpdate(evt.matchedOrderUid, order));
 
                 // todo aggregate ticks having same price
-                ticks.add(new TickRecord(tradePrice, evt.size, evt.timestamp, evt.activeOrderAction));
+                ticks.add(new TickRecord(tradePrice, evt.size, cmd.timestamp, cmd.action));
 
-            } else if (evt.eventType == MatcherEventType.REJECTION) {
-                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
-                profile.rejectOrder(evt.activeOrderId, order -> sendOrderUpdate(evt.activeOrderUid, order));
-
-            } else if (evt.eventType == MatcherEventType.CANCEL) {
-                final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(evt.activeOrderUid);
-                profile.cancelOrder(evt.activeOrderId, order -> sendOrderUpdate(evt.activeOrderUid, order));
+            } else if (evt.eventType == MatcherEventType.REJECT) {
+                rejectEvent.set(new IEventsHandler.RejectEvent(
+                    cmd.symbol,
+                    evt.size,
+                    evt.price,
+                    cmd.orderId,
+                    cmd.uid,
+                    cmd.timestamp));
+            } else if (evt.eventType == MatcherEventType.REDUCE) {
+                //todo reduce
             }
+        });
+
+        if (rejectEvent.ref != null) {
+            final GatewayUserProfile profile = gatewayState.getOrCreateUserProfile(cmd.uid);
+            profile.rejectOrder(rejectEvent, order -> sendOrderUpdate(cmd.uid, order));
         }
 
         if (!ticks.isEmpty()) {
@@ -175,6 +202,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
             });
         }
+
     }
 
     private void processData(long seq, OrderCommand cmd) {
@@ -207,15 +235,14 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
 
         cmd.processMatcherEvents(evt -> {
             if (evt.eventType == MatcherEventType.TRADE) {
-
-                MatchingRole role = evt.activeOrderId == cmd.orderId ? MatchingRole.TAKER : MatchingRole.MAKER;
+                MatchingRole role = evt.matchedOrderId == cmd.orderId ? MatchingRole.MAKER : MatchingRole.TAKER;
                 tradeRecords.add(NewTradeRecord.builder().filledSize(evt.size).fillPrice(evt.price).matchingRole(role).build());
 
-            } else if (evt.eventType == MatcherEventType.CANCEL) {
+            } else if (evt.eventType == MatcherEventType.REDUCE) {
 
                 tradeRecords.add(ReduceRecord.builder().reducedSize(evt.size).build());
 
-            } else if (evt.eventType == MatcherEventType.REJECTION) {
+            } else if (evt.eventType == MatcherEventType.REJECT) {
 
                 tradeRecords.add(RejectionRecord.builder().rejectedSize(evt.size).build());
 
@@ -250,7 +277,7 @@ public class CommandEventsRouter implements ObjLongConsumer<OrderCommand> {
             return null;
         }
 
-        log.debug("MARKET DATA: " + cmd.marketData.dumpOrderBook());
+        log.debug("MARKET DATA: " + cmd.marketData.copy());
 
         L2MarketData marketData = cmd.marketData;
         OrderBookEvent orderBook = new OrderBookEvent(

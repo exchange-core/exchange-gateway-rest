@@ -4,7 +4,8 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd/HH:mm:ss.SSS/zzz} [%thread] %-5level %logger{36} - %msg%n</pattern>
+<!--            <pattern>%d{yyyy-MM-dd/HH:mm:ss.SSS/zzz} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%highlight(%-6level)] [%thread] %logger{} - %msg%n</pattern>
         </encoder>
     </appender>
 
@@ -26,7 +27,7 @@
 
     <logger name="exchange.core2" level="DEBUG"/>
 
-    <root level="INFO">
+    <root level="debug">
         <appender-ref ref="STDOUT"/>
     </root>
 

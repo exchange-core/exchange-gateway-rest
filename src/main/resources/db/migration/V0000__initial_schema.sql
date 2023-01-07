@@ -39,10 +39,7 @@ CREATE TABLE gw.symbols (
     symbol_lot_size             NUMERIC(18,8) NOT NULL,
     symbol_step_size            NUMERIC(18,8) NOT NULL,
     symbol_taker_fee            NUMERIC(18,8) NOT NULL,
-    symbol_taker_fee            NUMERIC(18,8) NOT NULL,
     symbol_margin_buy           NUMERIC(18,8) NOT NULL,
-    symbol_margin_buy           NUMERIC(18,8) NOT NULL,
-    symbol_price_high_limit     NUMERIC(18,8) NOT NULL,
     symbol_price_high_limit     NUMERIC(18,8) NOT NULL,
     symbol_state                SMALLINT NOT NULL,
     symbol_state_seq            BIGINT NOT NULL,
@@ -62,7 +59,7 @@ CREATE TABLE gw.orders (
     order_create_time           TIMESTAMP WITH TIME ZONE NOT NULL,
     order_state                 SMALLINT NOT NULL,
     order_state_seq             BIGINT NOT NULL,
-    CONSTRAINT historical_data_period_pk PRIMARY KEY (historical_data_period_id)
+    CONSTRAINT orders_pk PRIMARY KEY (order_id)
 );
 
 -- all deals (trades)
